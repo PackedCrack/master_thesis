@@ -1,6 +1,5 @@
 #pragma once
 
-#include <assert.h>
 #include <stdint.h>
 
 
@@ -36,12 +35,14 @@ size_t details_vector_size(Vector* pVector);
 size_t details_vector_capacity(Vector* pVector);
 #define VECTOR_CAPACITY(vector) details_vector_capacity(&vector)
 
-void details_vector_push_back(Vector* pVector, void* pNewElement);
-#define VECTOR_PUSH_BACK(vector, object) assert(sizeof(object) == vector.typeSize); details_vector_push_back(&vector, &object)
+void* details_vector_push_back(Vector* pVector, void* pNewElement, size_t typeSize);
+#define VECTOR_PUSH_BACK(vector, T, object) (T*) details_vector_push_back(&vector, &object, sizeof(T))
 
 void details_vector_pop_back(Vector* pVector);
 #define VECTOR_POP_BACK(vector) details_vector_pop_back(&vector)
 
 void details_vector_swap(Vector* pVector, size_t index1, size_t index2);
-#define VECTOR_SWAP(vector, index1, index2) details_vector_pop_back(&vector, index1, index2)
+#define VECTOR_SWAP(vector, index1, index2) details_vector_swap(&vector, index1, index2)
 
+void details_vector_swap_and_pop(Vector* pVector, size_t valueToErase);
+#define VECTOR_SWAP_AND_POP(vector, valueToErase) details_vector_swap_and_pop(&vector, valueToErase)

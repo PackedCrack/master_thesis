@@ -1,6 +1,6 @@
 #include "vector.h"
 
-
+#include <assert.h>
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
@@ -17,9 +17,9 @@ static size_t round_up_to_pow_2(size_t value)
 	double exponent = ceil(log2((double) value));
 	return (size_t) pow(2.0, exponent);
 }
-static void resize(Vector* pVector)
+static void resize(Vector* pVector, size_t newSize)
 {
-	Vector vec = details_vector_create(pVector->typeSize, details_vector_size(pVector));
+	Vector vec = details_vector_create(pVector->typeSize, newSize);
 
 	// This assumes that the elements are trivially copyable
 	size_t bytesInUse = details_vector_size(pVector) * pVector->typeSize;
@@ -30,7 +30,7 @@ static void resize(Vector* pVector)
 }
 static int32_t requires_resize(Vector* pVector)
 {
-	return (details_vector_size(pVector) >= details_vector_capacity(pVector));
+	return (details_vector_size(pVector) == details_vector_capacity(pVector));
 }
 //
 //
@@ -91,7 +91,7 @@ void* details_vector_back(Vector* pVector)
 	assert(pVector->pData != NULL);
 	assert(pVector->size > 0);
 
-	ptrdiff_t offset = pVector->typeSize * pVector->size;
+	ptrdiff_t offset = pVector->typeSize * (pVector->size - 1);
 	return (uint8_t*) pVector->pData + offset;
 }
 int32_t details_vector_empty(Vector* pVector)
@@ -120,22 +120,27 @@ size_t details_vector_capacity(Vector* pVector)
 
 	return pVector->capacity;
 }
-void details_vector_push_back(Vector* pVector, void* pNewElement)
+void* details_vector_push_back(Vector* pVector, void* pNewElement, size_t typeSize)
 {
 	assert(pVector != NULL);
 	assert(pVector->pData != NULL);
-
-	size_t index = details_vector_size(pVector);
-	++pVector->size;
+	assert(typeSize == pVector->typeSize);
 
 	if (requires_resize(pVector))
 	{
-		resize(pVector);
+		size_t newSize = details_vector_size(pVector) + 1;
+		resize(pVector, newSize);
+	}
+	else
+	{
+		++pVector->size;
 	}
 
 	// This assumes a trivially copyable value_type
-	void* pDst = details_vector_at(pVector, index);
+	void* pDst = details_vector_back(pVector);
 	memcpy(pDst, pNewElement, pVector->typeSize);
+
+	return pDst;
 }
 void details_vector_pop_back(Vector* pVector)
 {
@@ -165,6 +170,10 @@ void details_vector_swap(Vector* pVector, size_t index1, size_t index2)
 	memcpy(tmp, pFirst, pVector->typeSize);
 	memcpy(pFirst, pSecond, pVector->typeSize);
 	memcpy(pSecond, tmp, pVector->typeSize);
-
-	assert(0);
+}
+void details_vector_swap_and_pop(Vector* pVector, size_t valueToErase)
+{
+	size_t lastElement = details_vector_size(pVector) - 1;
+	details_vector_swap(pVector, valueToErase, lastElement);
+	details_vector_pop_back(pVector);
 }
