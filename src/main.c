@@ -1,29 +1,30 @@
 #include "vector.h"
+#include "str.h"
+#include "runtime_linking.h"
+
+#include "stdio.h"
 
 
 int main(int argc, char** argv)
 {
-	Vector ints = VECTOR_CREATE(int32_t, 1);
+	Vector procedures = VECTOR_CREATE(String, 0);
+	String p1 = STRING_CREATE("VirtualProtect");
+	VECTOR_PUSH_BACK(procedures, String, p1);
+	String p2 = STRING_CREATE("VirtualFree");
+	VECTOR_PUSH_BACK(procedures, String, p2);
+	String p3 = STRING_CREATE("FindFirstFileA");
+	VECTOR_PUSH_BACK(procedures, String, p3);
 
-	for (int32_t i = 0; i < 16; ++i)
+	ProcedureList pl = procedure_list_create("kernel32.dll", &procedures);
+	procedure_list_destroy(&pl);
+
+	for (size_t i = 0u; i < VECTOR_SIZE(procedures); ++i)
 	{
-		VECTOR_PUSH_BACK(ints, int32_t, i);
-
-		if (i % 3 == 0)
-		{
-			VECTOR_POP_BACK(ints);
-		}
+		String* pProcedure = VECTOR_AT(procedures, String, i);
+		STRING_DESTROY(*pProcedure);
 	}
 
-
-	VECTOR_SWAP(ints, 2, 5);
-	VECTOR_SWAP(ints, 5, 2);
-	VECTOR_SWAP(ints, 0, 3);
-
-	VECTOR_SWAP_AND_POP(ints, 5);
-
-
-	VECTOR_DESTROY(ints);
+	VECTOR_DESTROY(procedures);
 
 	return 0;
 }
