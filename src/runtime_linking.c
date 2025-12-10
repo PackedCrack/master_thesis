@@ -17,7 +17,7 @@ static HMODULE dll_module_handle(const char* dll)
 
 	return module;
 }
-ProcedureList procedure_list_create(const char* dll, const Vector* pProcedures)
+ProcedureList procedure_list_create(const char* dll, Vector* pProcedures)
 {
 	assert(dll != NULL);
 	assert(VECTOR_EMPTY(*pProcedures) == FALSE);

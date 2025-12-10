@@ -4,9 +4,21 @@
 
 #include "stdio.h"
 
+#ifndef NDEBUG
+#define _CRTDBG_MAP_ALLOC
+#include <crtdbg.h>
+#endif
 
 int main(int argc, char** argv)
 {
+#ifndef NDEBUG
+	_CrtSetDbgFlag(
+		_CRTDBG_ALLOC_MEM_DF |
+		_CRTDBG_LEAK_CHECK_DF 
+	);
+#endif
+
+
 	Vector procedures = VECTOR_CREATE(String, 0);
 	String p1 = STRING_CREATE("VirtualProtect");
 	VECTOR_PUSH_BACK(procedures, String, p1);

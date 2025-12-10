@@ -8,5 +8,5 @@ typedef struct
 	Vector procedures;	// Vector of FARPROC
 } ProcedureList;
 
-ProcedureList procedure_list_create(const char* dll, const Vector* pProcedures);
+ProcedureList procedure_list_create(const char* dll, Vector* pProcedures);
 void procedure_list_destroy(ProcedureList* pList);
