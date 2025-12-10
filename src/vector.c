@@ -7,6 +7,9 @@
 #include <stdio.h>
 
 
+#define TRUE 1
+#define FALSE 0
+
 static size_t round_up_to_pow_2(size_t value)
 {
 	if (value <= 1)
@@ -20,6 +23,7 @@ static size_t round_up_to_pow_2(size_t value)
 static void resize(Vector* pVector, size_t newSize)
 {
 	Vector vec = details_vector_create(pVector->typeSize, newSize);
+	assert(vec.pData != NULL);
 
 	// This assumes that the elements are trivially copyable
 	size_t bytesInUse = details_vector_size(pVector) * pVector->typeSize;
@@ -37,21 +41,23 @@ static int32_t requires_resize(Vector* pVector)
 Vector details_vector_create(size_t typeSize, size_t numElements)
 {
 	assert(typeSize > 0);
-	assert(numElements > 0);
 
 	Vector vec = { 0 };
 	vec.typeSize = typeSize;
 	vec.size = numElements;
-	vec.capacity = round_up_to_pow_2(numElements);
 
-	size_t bytesRequired = vec.typeSize * vec.capacity;
-	vec.pData = malloc(bytesRequired);
-	if (vec.pData == NULL)
+	if (numElements > 0)
 	{
-		printf("Failed to allocate memory when creating a vector");
-	}
-	else
-	{
+		vec.capacity = round_up_to_pow_2(numElements);
+
+		size_t bytesRequired = vec.typeSize * vec.capacity;
+		vec.pData = malloc(bytesRequired);
+		if (vec.pData == NULL)
+		{
+			fprintf(stderr, "Failed to allocate memory when creating a vector");
+			abort();
+		}
+
 		vec.pData = memset(vec.pData, 0, bytesRequired);
 	}
 
@@ -60,10 +66,12 @@ Vector details_vector_create(size_t typeSize, size_t numElements)
 void details_vector_destroy(Vector* pVector)
 {
 	assert(pVector != NULL);
-	assert(pVector->pData != NULL);
-	
-	free(pVector->pData);
-	pVector->pData = NULL;
+
+	if (pVector->pData != NULL)
+	{
+		free(pVector->pData);
+		pVector->pData = NULL;
+	}
 	pVector->capacity = 0;
 	pVector->size = 0;
 	pVector->typeSize = 0;
@@ -97,33 +105,30 @@ void* details_vector_back(Vector* pVector)
 int32_t details_vector_empty(Vector* pVector)
 {
 	assert(pVector != NULL);
-	assert(pVector->pData != NULL);
 
 	if (pVector->size == 0)
 	{
-		return 1;
+		return TRUE;
 	}
 
-	return 0;
+	return FALSE;
 }
 size_t details_vector_size(Vector* pVector)
 {
 	assert(pVector != NULL);
-	assert(pVector->pData != NULL);
 
 	return pVector->size;
 }
 size_t details_vector_capacity(Vector* pVector)
 {
 	assert(pVector != NULL);
-	assert(pVector->pData != NULL);
 
 	return pVector->capacity;
 }
 void* details_vector_push_back(Vector* pVector, void* pNewElement, size_t typeSize)
 {
 	assert(pVector != NULL);
-	assert(pVector->pData != NULL);
+	//assert(pVector->pData != NULL);
 	assert(typeSize == pVector->typeSize);
 
 	if (requires_resize(pVector))
@@ -173,6 +178,11 @@ void details_vector_swap(Vector* pVector, size_t index1, size_t index2)
 }
 void details_vector_swap_and_pop(Vector* pVector, size_t valueToErase)
 {
+	assert(pVector != NULL);
+	assert(pVector->pData != NULL);
+	assert(pVector->size > 0);
+	assert(valueToErase < pVector->size);
+
 	size_t lastElement = details_vector_size(pVector) - 1;
 	details_vector_swap(pVector, valueToErase, lastElement);
 	details_vector_pop_back(pVector);
