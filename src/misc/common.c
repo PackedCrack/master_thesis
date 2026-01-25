@@ -135,3 +135,12 @@ HANDLE open_log_file(LPWSTR basename)
 		return hFile;
 	}
 }
+void write_to_file(HANDLE hFile, const wchar_t* content)
+{
+	BOOL success = WriteFile(hFile, content, wcslen(content) * sizeof(WCHAR), NULL, NULL);
+	if (!success)
+	{
+		PRINT_WIN32_ERROR(WriteFile);
+		assert(FALSE);
+	}
+}
