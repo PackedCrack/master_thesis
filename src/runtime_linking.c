@@ -1,7 +1,7 @@
 #include "runtime_linking.h"
 
-#include "common.h"
-#include "str.h"
+#include "misc/common.h"
+#include "misc/str.h"
 
 #include <assert.h>
 #define WIN32_LEAN_AND_MEAN

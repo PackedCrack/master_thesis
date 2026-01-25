@@ -1,0 +1,6 @@
+SET(SOURCES
+	T1082.c
+	T1082.h
+)
+
+target_sources(${EXECUTABLE} PRIVATE ${SOURCES})
