@@ -1,6 +1,7 @@
 #include "T1082.h"
 
 #include "../misc/common.h"
+#include "../misc/vector.h"
 
 #include "assert.h"
 #include "stdio.h"
@@ -213,17 +214,144 @@ static void log_local_accounts(HANDLE hLog)
 		}
 	}
 }
-static void collect_account_and_networking(HANDLE hLog)
+static void collect_hostname_account_info(HANDLE hLog)
 {
 	assert(hLog != INVALID_HANDLE_VALUE);
 
 	WCHAR hostname[256] = { 0 };
 	size_t hostnameLen = get_hostname(hostname, sizeof(hostname));
+	
+	WCHAR line[512] = { 0 };
+	swprintf(line,
+			 ARRAYSIZE(line),
+			 L"\n\nFully Qualified DNS: %ls\n",
+			 hostname);
+	write_to_file(hLog, line);
 
 	log_local_accounts(hLog);
+}
+static void log_cpu_and_memory(HANDLE hLog)
+{
+	SYSTEM_INFO info = { 0 };
+	GetNativeSystemInfo(&info);
+
+	if (info.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_AMD64)
+	{
+		write_to_file(hLog, L"Architecture: x86-64\n");
+	}
+	else if (info.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_INTEL)
+	{
+		write_to_file(hLog, L"Architecture: x86\n");
+	}
+	
+	WCHAR processor[128] = { 0 };
+	swprintf(processor, ARRAYSIZE(processor), L"Logical Processors: %lu\n", info.dwNumberOfProcessors);
+
+	MEMORYSTATUSEX memory = { 0 };
+	memory.dwLength = sizeof(MEMORYSTATUSEX);
+	BOOL success = GlobalMemoryStatusEx(&memory);
+	if (!success)
+	{
+		PRINT_WIN32_ERROR(GlobalMemoryStatusEx);
+		assert(FALSE);
+	}
+	else
+	{
+		WCHAR memoryLine[512] = { 0 };
+		swprintf(memoryLine,
+				ARRAYSIZE(memoryLine),
+				L"Total RAM (bytes): 0x%llX\n"
+				L"Available RAM(bytes): 0x%llX\n"
+				L"In Use: %lu%%\n",
+				memory.ullTotalPhys,
+				memory.ullAvailPhys,
+				memory.dwMemoryLoad);
+		write_to_file(hLog, memoryLine);
+	}
+}
+static void log_hard_drives(HANDLE hLog)
+{
+	WCHAR volume[MAX_PATH] = { 0 };
+	HANDLE hVolume = FindFirstVolumeW(volume, ARRAYSIZE(volume));
+	if (hVolume == INVALID_HANDLE_VALUE)
+	{
+		PRINT_WIN32_ERROR(FindFirstVolumeW);
+		assert(FALSE);
+		return;
+	}
 
 
-	int a = 10;
+	while (TRUE)
+	{
+		DWORD size = 0;
+		BOOL success = GetVolumePathNamesForVolumeNameW(volume, NULL, 0, &size);
+		if (!success)
+		{
+			DWORD err = GetLastError();
+			if (err != ERROR_MORE_DATA)
+			{
+				printf("GetVolumePathNamesForVolumeNameW failed with: 0x%X", err);
+				assert(FALSE);
+				break;
+			}
+		}
+
+		Vector names = VECTOR_CREATE(WCHAR, size);
+		assert(VECTOR_SIZE(names) == size);
+
+		success = GetVolumePathNamesForVolumeNameW(volume, names.pData, VECTOR_SIZE(names), &size);
+		if (!success)
+		{
+			PRINT_WIN32_ERROR(GetVolumePathNamesForVolumeNameW);
+			assert(FALSE);
+			break;
+		}
+
+		if (names.pData != L'\0')
+		{
+			WCHAR line[512] = { 0 };
+			swprintf(line, ARRAYSIZE(line), L"Volume: %ls\n", volume);
+			write_to_file(hLog, line);
+
+			const WCHAR* pName = names.pData;
+			while (*pName != L'\0')
+			{
+				WCHAR mountPoint[512] = { 0 };
+				swprintf(mountPoint, ARRAYSIZE(mountPoint), L"MountPoint: %ls\n", pName);
+				write_to_file(hLog, mountPoint);
+
+				pName += wcslen(pName) + 1;
+			}
+		}
+
+		VECTOR_DESTROY(names);
+
+		if (!FindNextVolumeW(hVolume, volume, ARRAYSIZE(volume)))
+		{
+			DWORD err = GetLastError();
+			if (err != ERROR_NO_MORE_FILES)
+			{
+				printf("FindNextVolumeW failed with: 0x%X", err);
+				assert(FALSE);
+			}
+
+			break;
+		}
+	}
+	
+	if (!FindVolumeClose(hVolume))
+	{
+		PRINT_WIN32_ERROR(FindVolumeClose);
+		assert(FALSE);
+	}
+}
+static void collect_hardware_info(HANDLE hLog)
+{
+	write_to_file(hLog, L"\n\nHardware Info\n");
+
+	log_cpu_and_memory(hLog);
+
+	log_hard_drives(hLog);
 }
 //
 //
@@ -237,9 +365,10 @@ void execute_t1082()
 	collect_os_info(hLog);
 
 	// Hostname, domain membership
-	collect_account_and_networking(hLog);
+	collect_hostname_account_info(hLog);
 
 	// CPU, Ram size, Connected DISKS
+	collect_hardware_info(hLog);
 
 	// Language, Locale
 
