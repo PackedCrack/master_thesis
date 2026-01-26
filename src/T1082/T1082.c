@@ -353,6 +353,84 @@ static void collect_hardware_info(HANDLE hLog)
 
 	log_hard_drives(hLog);
 }
+static Vector get_preferred_system_language()
+{
+	ULONG numLanguages = 0;
+	ULONG len = 0;
+	BOOL success = GetSystemPreferredUILanguages(MUI_LANGUAGE_NAME, &numLanguages, NULL, &len);
+	if (!success)
+	{
+		DWORD err = GetLastError();
+		if (err != ERROR_INSUFFICIENT_BUFFER)
+		{
+			printf("GetSystemPreferredUILanguages failed with: 0x:%X", err);
+			assert(FALSE);
+		}
+	}
+	else
+	{
+		Vector languages = VECTOR_CREATE(WCHAR, len);
+		if (GetSystemPreferredUILanguages(MUI_LANGUAGE_NAME, &numLanguages, languages.pData, &len))
+		{
+			return languages;
+		}
+		else
+		{
+			PRINT_WIN32_ERROR(GetSystemPreferredUILanguages);
+			assert(FALSE);
+		}
+	}
+
+	Vector dummy = { 0 };
+	return dummy;
+}
+static void log_preferred_system_language(HANDLE hLog)
+{
+	Vector languages = get_preferred_system_language();
+	if (languages.pData != NULL)
+	{
+		const WCHAR* pLanguage = languages.pData;
+		while (*pLanguage != L'\0')
+		{
+			WCHAR line[256] = { 0 };
+			swprintf(line, ARRAYSIZE(line), L"Preferred System Language: %ls\n", pLanguage);
+			write_to_file(hLog, line);
+
+			pLanguage += wcslen(pLanguage) + 1;
+		}
+	}
+	
+	VECTOR_DESTROY(languages);
+}
+static void collect_language_info(HANDLE hLog)
+{
+	write_to_file(hLog, L"\n\nLanguage Info:\n");
+
+	GEOID id = GetUserGeoID(GEOCLASS_NATION);
+	if (id != GEOID_NOT_AVAILABLE)
+	{
+		WCHAR info[64] = { 0 };
+		int32_t len = GetGeoInfoW(id, GEO_ISO2, info, ARRAYSIZE(info), GetUserDefaultLangID());
+
+		WCHAR line[128] = { 0 };
+		swprintf(line, ARRAYSIZE(line), L"Geolocation: %ls\n", info);
+	}
+
+	log_preferred_system_language(hLog);
+
+	WCHAR locale[LOCALE_NAME_MAX_LENGTH] = { 0 };
+	int32_t size = GetUserDefaultLocaleName(locale, LOCALE_NAME_MAX_LENGTH);
+	if (size == 0)
+	{
+		PRINT_WIN32_ERROR(GetUserDefaultLocaleName);
+		assert(FALSE);
+		return;
+	}
+
+	WCHAR line[128 + LOCALE_NAME_MAX_LENGTH] = { 0 };
+	swprintf(line, ARRAYSIZE(line), L"Default User Locale: %ls\n", locale);
+	write_to_file(hLog, line);
+};
 //
 //
 void execute_t1082()
@@ -364,16 +442,15 @@ void execute_t1082()
 	// OS and build
 	collect_os_info(hLog);
 
+	// Language, Locale
+	collect_language_info(hLog);
+
 	// Hostname, domain membership
 	collect_hostname_account_info(hLog);
 
 	// CPU, Ram size, Connected DISKS
 	collect_hardware_info(hLog);
-
-	// Language, Locale
-
-	// Log details
-
+	
 	// Destroy ProcedueList
 
 	CloseHandle(hLog);
