@@ -358,7 +358,7 @@ static void collect_os_info(HANDLE hLog, ProcedureList* pAdvapi)
 
 	write_to_file(hLog, output);
 }
-static size_t get_hostname(LPWSTR pOut, size_t outSize, ProcedureList* pKernel32)
+static size_t get_hostname(COMPUTER_NAME_FORMAT format, LPWSTR pOut, size_t outSize, ProcedureList* pKernel32)
 {
 	assert(pOut != NULL);
 	assert(outSize > 256);
@@ -367,7 +367,7 @@ static size_t get_hostname(LPWSTR pOut, size_t outSize, ProcedureList* pKernel32
 	FARPROC PFN_GetComputerNameExW = *VECTOR_AT(pKernel32->procedures, FARPROC, GET_COMPUTER_NAME_EX_W);
 
 	DWORD size = outSize / sizeof(WCHAR);
-	BOOL success = PFN_GetComputerNameExW(ComputerNameDnsFullyQualified,
+	BOOL success = PFN_GetComputerNameExW(format,
 									  pOut,
 									  &size);
 
@@ -384,15 +384,24 @@ static void collect_hostname_account_info(HANDLE hLog, ProcedureList* pKernel32)
 {
 	assert(hLog != INVALID_HANDLE_VALUE);
 
-	WCHAR hostname[256] = { 0 };
-	size_t hostnameLen = get_hostname(hostname, sizeof(hostname), pKernel32);
-	
-	WCHAR line[512] = { 0 };
-	swprintf(line,
-			 ARRAYSIZE(line),
-			 L"\n\nFully Qualified DNS: %ls\n",
-			 hostname);
-	write_to_file(hLog, line);
+	LPCWSTR formatNames[3] = { L"NetBIOS Name:", L"DNS Hostname:", L"Fully Qualified DNS:" };
+	COMPUTER_NAME_FORMAT formats[3] = { ComputerNameNetBIOS, ComputerNameDnsHostname, ComputerNameDnsFullyQualified };
+	assert(ARRAYSIZE(formats) == ARRAYSIZE(formatNames));
+	for (size_t i = 0; i < ARRAYSIZE(formats); ++i)
+	{
+		WCHAR hostname[256] = { 0 };
+		COMPUTER_NAME_FORMAT format = formats[i];
+		size_t hostnameLen = get_hostname(format, hostname, sizeof(hostname), pKernel32);
+
+		WCHAR line[512] = { 0 };
+		LPCWSTR name = formatNames[i];
+		swprintf(line,
+				 ARRAYSIZE(line),
+				 L"%ls %ls\n",
+				 name,
+				 hostname);
+		write_to_file(hLog, line);
+	}
 
 	// Not part of T1082
 	//log_local_accounts(hLog);
@@ -414,6 +423,7 @@ static void log_cpu_and_memory(HANDLE hLog, ProcedureList* pKernel32)
 	
 	WCHAR processor[128] = { 0 };
 	swprintf(processor, ARRAYSIZE(processor), L"Logical Processors: %lu\n", info.dwNumberOfProcessors);
+	write_to_file(hLog, processor);
 
 	MEMORYSTATUSEX memory = { 0 };
 	memory.dwLength = sizeof(MEMORYSTATUSEX);
