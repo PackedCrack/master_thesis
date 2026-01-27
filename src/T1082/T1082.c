@@ -1,7 +1,9 @@
 #include "T1082.h"
 
 #include "../misc/common.h"
+#include "../misc/str.h"
 #include "../misc/vector.h"
+#include "../runtime_linking.h"
 
 #include "assert.h"
 #include "stdio.h"
@@ -10,82 +12,16 @@
 #include <Windows.h>
 #include <lm.h>
 
+// Kernel32.dll
+#define GET_COMPUTER_NAME_EX_W 0
+#define GET_NATIVE_SYSTEM_INFO 1
+#define GLOBAL_MEMORY_STATUS_EX 2
+#define CLOSE_HANDLE 3
+static const char* kernel32Procedures[4] = { "GetComputerNameExW", "GetNativeSystemInfo", "GlobalMemoryStatusEx", "CloseHandle" };
+// advapi32.dll
+#define REG_GET_VALUE_W 0
+static const char* advapiProcedures[1] = { "RegGetValueW" };
 
-static DWORD get_registry_dword_value(LPWSTR pValue)
-{
-	DWORD data = 0;
-	DWORD cbData = sizeof(DWORD);
-	LSTATUS status = RegGetValueW(HKEY_LOCAL_MACHINE,
-								  L"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion",
-								  pValue,
-								  RRF_RT_REG_DWORD,
-								  NULL,
-								  &data,
-								  &cbData);
-	assert(status == ERROR_SUCCESS);
-
-	return data;
-}
-static void get_registry_str_value(LPWSTR pValue, LPWSTR pOutData, DWORD outBufferSize)
-{
-	LSTATUS status = RegGetValueW(HKEY_LOCAL_MACHINE,
-								  L"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion",
-								  pValue,
-								  RRF_RT_REG_SZ,
-								  NULL,
-								  pOutData,
-								  &outBufferSize);
-	assert(status == ERROR_SUCCESS);
-}
-static void collect_os_info(HANDLE hLog)
-{
-	assert(hLog != INVALID_HANDLE_VALUE);
-
-
-	WCHAR name[256] = { 0 };
-	get_registry_str_value(L"ProductName", name, sizeof(name));
-	WCHAR version[64] = { 0 };
-	get_registry_str_value(L"DisplayVersion", version, sizeof(version));
-	WCHAR build[64] = { 0 };
-	get_registry_str_value(L"CurrentBuildNumber", build, sizeof(build));
-
-	DWORD updateBuildRevision = get_registry_dword_value(L"UBR");
-
-	WCHAR output[512] = { 0 };
-	swprintf(output, 
-			 ARRAYSIZE(output), 
-			 L"Product: %ls\nVersion: %ls\nBuild: %ls\nUBR: %i\n", 
-			 name,
-			 version, 
-			 build, 
-			 updateBuildRevision);
-
-	BOOL success = WriteFile(hLog, output, wcslen(output) * sizeof(WCHAR), NULL, NULL);
-	if (!success)
-	{
-		PRINT_WIN32_ERROR(WriteFile);
-		assert(FALSE);
-	}
-}
-static size_t get_hostname(LPWSTR pOut, size_t outSize)
-{
-	assert(pOut != NULL);
-	assert(outSize > 256);
-
-	DWORD size = outSize / sizeof(WCHAR);
-	BOOL success = GetComputerNameExW(ComputerNameDnsFullyQualified,
-									  pOut,
-									  &size);
-
-	if (!success)
-	{
-		PRINT_WIN32_ERROR(GetComputerNameExW);
-		assert(FALSE);
-		return 0;
-	}
-
-	return wcslen(pOut);
-}
 //static LPWSTR get_privilege(DWORD priv)
 //{
 //	if (priv == USER_PRIV_GUEST)
@@ -211,62 +147,6 @@ static size_t get_hostname(LPWSTR pOut, size_t outSize)
 //		}
 //	}
 //}
-static void collect_hostname_account_info(HANDLE hLog)
-{
-	assert(hLog != INVALID_HANDLE_VALUE);
-
-	WCHAR hostname[256] = { 0 };
-	size_t hostnameLen = get_hostname(hostname, sizeof(hostname));
-	
-	WCHAR line[512] = { 0 };
-	swprintf(line,
-			 ARRAYSIZE(line),
-			 L"\n\nFully Qualified DNS: %ls\n",
-			 hostname);
-	write_to_file(hLog, line);
-
-	// Not part of T1082
-	//log_local_accounts(hLog);
-}
-static void log_cpu_and_memory(HANDLE hLog)
-{
-	SYSTEM_INFO info = { 0 };
-	GetNativeSystemInfo(&info);
-
-	if (info.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_AMD64)
-	{
-		write_to_file(hLog, L"Architecture: x86-64\n");
-	}
-	else if (info.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_INTEL)
-	{
-		write_to_file(hLog, L"Architecture: x86\n");
-	}
-	
-	WCHAR processor[128] = { 0 };
-	swprintf(processor, ARRAYSIZE(processor), L"Logical Processors: %lu\n", info.dwNumberOfProcessors);
-
-	MEMORYSTATUSEX memory = { 0 };
-	memory.dwLength = sizeof(MEMORYSTATUSEX);
-	BOOL success = GlobalMemoryStatusEx(&memory);
-	if (!success)
-	{
-		PRINT_WIN32_ERROR(GlobalMemoryStatusEx);
-		assert(FALSE);
-	}
-	else
-	{
-		WCHAR memoryLine[512] = { 0 };
-		swprintf(memoryLine,
-				ARRAYSIZE(memoryLine),
-				L"Total RAM (bytes): 0x%llX\n"
-				L"Available RAM(bytes): 0x%llX\n"
-				L"In Use: %lu%%\n",
-				memory.ullTotalPhys,
-				memory.ullAvailPhys,
-				memory.dwMemoryLoad);
-		write_to_file(hLog, memoryLine);
-	}
-}
 //static void log_hard_drives(HANDLE hLog)
 //{
 //	WCHAR volume[MAX_PATH] = { 0 };
@@ -343,15 +223,6 @@ static void log_cpu_and_memory(HANDLE hLog)
 //		assert(FALSE);
 //	}
 //}
-static void collect_hardware_info(HANDLE hLog)
-{
-	write_to_file(hLog, L"\n\nHardware Info\n");
-
-	log_cpu_and_memory(hLog);
-
-	// Not part of T1082
-	//log_hard_drives(hLog);
-}
 //static Vector get_preferred_system_language()
 //{
 //	ULONG numLanguages = 0;
@@ -432,25 +303,178 @@ static void collect_hardware_info(HANDLE hLog)
 //};
 //
 //
+static DWORD get_registry_dword_value(LPWSTR pValue, ProcedureList* pAdvapi)
+{
+	FARPROC PFN_RegGetValueW = *VECTOR_AT(pAdvapi->procedures, FARPROC, REG_GET_VALUE_W);
+
+	DWORD data = 0;
+	DWORD cbData = sizeof(DWORD);
+	LSTATUS status = PFN_RegGetValueW(HKEY_LOCAL_MACHINE,
+								  L"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion",
+								  pValue,
+								  RRF_RT_REG_DWORD,
+								  NULL,
+								  &data,
+								  &cbData);
+	assert(status == ERROR_SUCCESS);
+
+	return data;
+}
+static void get_registry_str_value(LPWSTR pValue, LPWSTR pOutData, DWORD outBufferSize, ProcedureList* pAdvapi)
+{
+	FARPROC PFN_RegGetValueW = *VECTOR_AT(pAdvapi->procedures, FARPROC, REG_GET_VALUE_W);
+
+	LSTATUS status = PFN_RegGetValueW(HKEY_LOCAL_MACHINE,
+								  L"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion",
+								  pValue,
+								  RRF_RT_REG_SZ,
+								  NULL,
+								  pOutData,
+								  &outBufferSize);
+	assert(status == ERROR_SUCCESS);
+}
+static void collect_os_info(HANDLE hLog, ProcedureList* pAdvapi)
+{
+	assert(hLog != INVALID_HANDLE_VALUE);
+
+
+	WCHAR name[256] = { 0 };
+	get_registry_str_value(L"ProductName", name, sizeof(name), pAdvapi);
+	WCHAR version[64] = { 0 };
+	get_registry_str_value(L"DisplayVersion", version, sizeof(version), pAdvapi);
+	WCHAR build[64] = { 0 };
+	get_registry_str_value(L"CurrentBuildNumber", build, sizeof(build), pAdvapi);
+
+	DWORD updateBuildRevision = get_registry_dword_value(L"UBR", pAdvapi);
+
+	WCHAR output[512] = { 0 };
+	swprintf(output, 
+			 ARRAYSIZE(output), 
+			 L"Product: %ls\nVersion: %ls\nBuild: %ls\nUBR: %i\n", 
+			 name,
+			 version, 
+			 build, 
+			 updateBuildRevision);
+
+	write_to_file(hLog, output);
+}
+static size_t get_hostname(LPWSTR pOut, size_t outSize, ProcedureList* pKernel32)
+{
+	assert(pOut != NULL);
+	assert(outSize > 256);
+	assert(pKernel32 != NULL);
+
+	FARPROC PFN_GetComputerNameExW = *VECTOR_AT(pKernel32->procedures, FARPROC, GET_COMPUTER_NAME_EX_W);
+
+	DWORD size = outSize / sizeof(WCHAR);
+	BOOL success = PFN_GetComputerNameExW(ComputerNameDnsFullyQualified,
+									  pOut,
+									  &size);
+
+	if (!success)
+	{
+		PRINT_WIN32_ERROR(GetComputerNameExW);
+		assert(FALSE);
+		return 0;
+	}
+
+	return wcslen(pOut);
+}
+static void collect_hostname_account_info(HANDLE hLog, ProcedureList* pKernel32)
+{
+	assert(hLog != INVALID_HANDLE_VALUE);
+
+	WCHAR hostname[256] = { 0 };
+	size_t hostnameLen = get_hostname(hostname, sizeof(hostname), pKernel32);
+	
+	WCHAR line[512] = { 0 };
+	swprintf(line,
+			 ARRAYSIZE(line),
+			 L"\n\nFully Qualified DNS: %ls\n",
+			 hostname);
+	write_to_file(hLog, line);
+
+	// Not part of T1082
+	//log_local_accounts(hLog);
+}
+static void log_cpu_and_memory(HANDLE hLog, ProcedureList* pKernel32)
+{
+	SYSTEM_INFO info = { 0 };
+	FARPROC PFN_GetNativeSystemInfo = *VECTOR_AT(pKernel32->procedures, FARPROC, GET_NATIVE_SYSTEM_INFO);
+	PFN_GetNativeSystemInfo(&info);
+
+	if (info.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_AMD64)
+	{
+		write_to_file(hLog, L"Architecture: x86-64\n");
+	}
+	else if (info.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_INTEL)
+	{
+		write_to_file(hLog, L"Architecture: x86\n");
+	}
+	
+	WCHAR processor[128] = { 0 };
+	swprintf(processor, ARRAYSIZE(processor), L"Logical Processors: %lu\n", info.dwNumberOfProcessors);
+
+	MEMORYSTATUSEX memory = { 0 };
+	memory.dwLength = sizeof(MEMORYSTATUSEX);
+	FARPROC PFN_GlobalMemoryStatusEx = *VECTOR_AT(pKernel32->procedures, FARPROC, GLOBAL_MEMORY_STATUS_EX);
+	BOOL success = PFN_GlobalMemoryStatusEx(&memory);
+	if (!success)
+	{
+		PRINT_WIN32_ERROR(GlobalMemoryStatusEx);
+		assert(FALSE);
+	}
+	else
+	{
+		WCHAR memoryLine[512] = { 0 };
+		swprintf(memoryLine,
+				ARRAYSIZE(memoryLine),
+				L"Total RAM (bytes): 0x%llX\n"
+				L"Available RAM(bytes): 0x%llX\n"
+				L"In Use: %lu%%\n",
+				memory.ullTotalPhys,
+				memory.ullAvailPhys,
+				memory.dwMemoryLoad);
+		write_to_file(hLog, memoryLine);
+	}
+}
+static void collect_hardware_info(HANDLE hLog, ProcedureList* pKernel32)
+{
+	assert(pKernel32 != NULL);
+
+	write_to_file(hLog, L"\n\nHardware Info\n");
+
+	log_cpu_and_memory(hLog, pKernel32);
+
+	// Not part of T1082
+	//log_hard_drives(hLog);
+}
+//
+//
 void execute_t1082()
 {
 	HANDLE hLog = open_log_file(L"LOG_T1082_");
 
 	// Create ProcedueList
+	ProcedureList advapi = procedure_list_create("advapi32.dll", advapiProcedures, ARRAYSIZE(advapiProcedures));
+	ProcedureList kernel32 = procedure_list_create("kernel32.dll", kernel32Procedures, ARRAYSIZE(kernel32Procedures));
 
 	// OS and build
-	collect_os_info(hLog);
+	collect_os_info(hLog, &advapi);
 
 	// Not part of T1082
 	//collect_language_info(hLog);
 
 	// Hostname, domain membership
-	collect_hostname_account_info(hLog);
+	collect_hostname_account_info(hLog, &kernel32);
 
 	// CPU, Ram size, Connected DISKS
-	collect_hardware_info(hLog);
+	collect_hardware_info(hLog, &kernel32);
 	
 	// Destroy ProcedueList
 
-	CloseHandle(hLog);
+	FARPROC PFN_CloseHandle = *VECTOR_AT(kernel32.procedures, FARPROC, CLOSE_HANDLE);
+	PFN_CloseHandle(hLog);
+	procedure_list_destroy(&advapi);
+	procedure_list_destroy(&kernel32);
 }
