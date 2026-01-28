@@ -5,6 +5,8 @@ SET(SOURCES
 	vector.h
 	str.c
 	str.h
+	wstr.c
+	wstr.h
 )
 
 target_sources(${EXECUTABLE} PRIVATE ${SOURCES})
