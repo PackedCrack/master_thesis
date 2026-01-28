@@ -16,58 +16,76 @@
 #include <mssip.h>
 
 
-// TODO: REMOVE ME
-#pragma comment(lib, "imagehlp.lib")
-#pragma comment(lib, "wintrust.lib")
-#pragma comment(lib, "crypt32.lib")
-
-
 // Kernel32.dll
 #define CLOSE_HANDLE 0
-static const char* kernel32Procedures[1] = { "CloseHandle" };
+#define FIND_VOLUME_CLOSE 1
+#define FIND_FIRST_VOLUME_W 2
+#define GET_VOLUME_PATH_NAMES_FOR_VOLUME_NAME_W 3
+#define FIND_NEXT_VOLUME_W 4
+#define FINE_FIRST_FILE_W 5
+#define GET_LAST_ERROR 6
+#define FIND_CLOSE 7
+#define CREATE_FILE_W 8
+#define FIND_NEXT_FILE_W 9
+static const char* kernel32Procedures[10] = { "CloseHandle", "FindVolumeClose", "FindFirstVolumeW", 
+											"GetVolumePathNamesForVolumeNameW", "FindNextVolumeW", "FindFirstFileW",
+											"GetLastError", "FindClose", "CreateFileW", "FindNextFileW"};
+// imagehlp.dll
+#define IMAGE_ENUMERATE_CERTIFICATES 0
+static const char* imagehlpProcedures[1] = { "ImageEnumerateCertificates" };
+
+// Wintrust.dll
+#define CRYPT_CAT_ADMIN_ACQUIRE_CONTEXT_2 0
+#define CRYPT_CAT_ADMIN_CALC_HASH_FROM_FILE_HANDLE_2 1
+#define CRYPT_CAT_ADMIN_ENUM_CATALOG_FROM_HASH 2
+#define CRYPT_CAT_ADMIN_RELEASE_CATALOG_CONTEXT 3
+#define CRYPT_CAT_ADMIN_RELEASE_CONTEXT 4
+static const char* wintrustProcedures[5] = { "CryptCATAdminAcquireContext2", "CryptCATAdminCalcHashFromFileHandle2",
+												"CryptCATAdminEnumCatalogFromHash", "CryptCATAdminReleaseCatalogContext",
+												"CryptCATAdminReleaseContext" };
 
 
-static DWORD get_hash_size(HCATADMIN hCatAdmin, HANDLE hFile)
+static DWORD get_hash_size(ProcedureList* pWintrust, HCATADMIN hCatAdmin, HANDLE hFile)
 {
 	DWORD cbHash = 0;
-	if (!CryptCATAdminCalcHashFromFileHandle2(hCatAdmin, hFile, &cbHash, NULL, 0))
+	FARPROC PFN_CryptCATAdminCalcHashFromFileHandle2 = *VECTOR_AT(pWintrust->procedures, FARPROC, CRYPT_CAT_ADMIN_CALC_HASH_FROM_FILE_HANDLE_2);
+	if (!PFN_CryptCATAdminCalcHashFromFileHandle2(hCatAdmin, hFile, &cbHash, NULL, 0))
 	{
+		PRINT_WIN32_ERROR(CryptCATAdminCalcHashFromFileHandle2);
+		assert(FALSE);
 		return 0;
 	}
 
 	return cbHash;
 }
-static Vector get_hash(HCATADMIN hCatAdmin, HANDLE hFile)
+static Vector get_hash(ProcedureList* pWintrust, HCATADMIN hCatAdmin, HANDLE hFile)
 {
 	// 3) Compute hash
-	DWORD size = get_hash_size(hCatAdmin, hFile);
+	DWORD size = get_hash_size(pWintrust, hCatAdmin, hFile);
 	if (size > 0)
 	{
 		Vector hash = VECTOR_CREATE(BYTE, size);
-		if (CryptCATAdminCalcHashFromFileHandle2(hCatAdmin, hFile, &size, hash.pData, 0))
+		FARPROC PFN_CryptCATAdminCalcHashFromFileHandle2 = *VECTOR_AT(pWintrust->procedures, FARPROC, CRYPT_CAT_ADMIN_CALC_HASH_FROM_FILE_HANDLE_2);
+		if (PFN_CryptCATAdminCalcHashFromFileHandle2(hCatAdmin, hFile, &size, hash.pData, 0))
 		{
 			return hash;
 		}
 		else
 		{
-			PRINT_WIN32_ERROR(CryptCATAdminReleaseContext);
+			PRINT_WIN32_ERROR(CryptCATAdminCalcHashFromFileHandle2);
 			assert(FALSE);
 			VECTOR_DESTROY(hash);
 		}
 	}
-	else
-	{
-		PRINT_WIN32_ERROR(CryptCATAdminReleaseContext);
-		assert(FALSE);
-	}
 
 	return (Vector) { 0 };
 }
-static BOOL has_signature_in_catalog(LPCWSTR filepath)
+static BOOL has_signature_in_catalog(ProcedureList* pKernel32, ProcedureList* pWintrust, LPCWSTR filepath)
 {
 	BOOL success = FALSE;
 
-	HANDLE hFile = CreateFileW(
+	FARPROC PFN_CreateFileW = *VECTOR_AT(pKernel32->procedures, FARPROC, CREATE_FILE_W);
+	HANDLE hFile = (HANDLE) PFN_CreateFileW(
 		filepath,
 		GENERIC_READ,
 		FILE_SHARE_READ,
@@ -85,8 +103,9 @@ static BOOL has_signature_in_catalog(LPCWSTR filepath)
 	else
 	{
 		HCATADMIN hCatAdmin = NULL;
-		GUID subSystem = DRIVER_ACTION_VERIFY;
-		if (!CryptCATAdminAcquireContext2(&hCatAdmin, &subSystem, NULL, NULL, 0))
+		GUID subSystem = DRIVER_ACTION_VERIFY;	// THis should maybe me NULL? Also - hash algorithm is default now so may produce false positives
+		FARPROC PFN_CryptCATAdminAcquireContext2 = *VECTOR_AT(pWintrust->procedures, FARPROC, CRYPT_CAT_ADMIN_ACQUIRE_CONTEXT_2);
+		if (!PFN_CryptCATAdminAcquireContext2(&hCatAdmin, &subSystem, NULL, NULL, 0))
 		{ 
 			PRINT_WIN32_ERROR(CryptCATAdminAcquireContext2);
 			assert(FALSE);
@@ -94,14 +113,16 @@ static BOOL has_signature_in_catalog(LPCWSTR filepath)
 		else
 		{
 
-			Vector hash = get_hash(hCatAdmin, hFile);
+			Vector hash = get_hash(pWintrust, hCatAdmin, hFile);
 			if (hash.pData != NULL)
 			{
-				HCATINFO hCatInfo = CryptCATAdminEnumCatalogFromHash(hCatAdmin, hash.pData, (DWORD) VECTOR_SIZE(hash), 0, NULL);
+				FARPROC PFN_CryptCATAdminEnumCatalogFromHash = *VECTOR_AT(pWintrust->procedures, FARPROC, CRYPT_CAT_ADMIN_ENUM_CATALOG_FROM_HASH);
+				HCATINFO hCatInfo = (HCATINFO) PFN_CryptCATAdminEnumCatalogFromHash(hCatAdmin, hash.pData, (DWORD) VECTOR_SIZE(hash), 0, NULL);
 				success = hCatInfo != NULL;
 				if (success)
 				{
-					if (!CryptCATAdminReleaseCatalogContext(hCatAdmin, hCatInfo, 0))
+					FARPROC PFN_CryptCATAdminReleaseCatalogContext = *VECTOR_AT(pWintrust->procedures, FARPROC, CRYPT_CAT_ADMIN_RELEASE_CATALOG_CONTEXT);
+					if (!PFN_CryptCATAdminReleaseCatalogContext(hCatAdmin, hCatInfo, 0))
 					{
 						PRINT_WIN32_ERROR(CryptCATAdminReleaseCatalogContext);
 						assert(FALSE);
@@ -111,21 +132,24 @@ static BOOL has_signature_in_catalog(LPCWSTR filepath)
 				VECTOR_DESTROY(hash);
 			}
 
-			if (!CryptCATAdminReleaseContext(hCatAdmin, 0))
+			FARPROC PFN_CryptCATAdminReleaseContext = *VECTOR_AT(pWintrust->procedures, FARPROC, CRYPT_CAT_ADMIN_RELEASE_CONTEXT);
+			if (!PFN_CryptCATAdminReleaseContext(hCatAdmin, 0))
 			{
 				PRINT_WIN32_ERROR(CryptCATAdminReleaseContext);
 				assert(FALSE);
 			}
 		}
 		
-		CloseHandle(hFile);
+		FARPROC PFN_CloseHandle = *VECTOR_AT(pKernel32->procedures, FARPROC, CLOSE_HANDLE);
+		PFN_CloseHandle(hFile);
 	}
 
 	return success;
 }
-static BOOL has_embedded_signature(LPCWSTR filepath)
+static BOOL has_embedded_signature(ProcedureList* pKernel32, ProcedureList* pImagehlp, LPCWSTR filepath)
 {
-	HANDLE hFile = CreateFileW(
+	FARPROC PFN_CreateFileW = *VECTOR_AT(pKernel32->procedures, FARPROC, CREATE_FILE_W);
+	HANDLE hFile = (HANDLE) PFN_CreateFileW(
 		filepath,
 		GENERIC_READ,
 		FILE_SHARE_READ,
@@ -138,13 +162,15 @@ static BOOL has_embedded_signature(LPCWSTR filepath)
 	if (hFile != INVALID_HANDLE_VALUE)
 	{
 		DWORD count = 0;
-		if (!ImageEnumerateCertificates(hFile, CERT_SECTION_TYPE_ANY, &count, NULL, 0))
+		FARPROC PFN_ImageEnumerateCertificates = *VECTOR_AT(pImagehlp->procedures, FARPROC, IMAGE_ENUMERATE_CERTIFICATES);
+		if (!PFN_ImageEnumerateCertificates(hFile, CERT_SECTION_TYPE_ANY, &count, NULL, 0))
 		{
 			PRINT_WIN32_ERROR(ImageEnumerateCertificates);
 			assert(FALSE);
 		}
 		
-		CloseHandle(hFile);
+		FARPROC PFN_CloseHandle = *VECTOR_AT(pKernel32->procedures, FARPROC, CLOSE_HANDLE);
+		PFN_CloseHandle(hFile);
 		return count > 0;
 	}
 	else
@@ -196,11 +222,13 @@ static BOOL has_matching_extension(const WIN32_FIND_DATAW* pData, LPCWSTR extens
 
 	return FALSE;
 }
-static BOOL find_next_file(HANDLE hFind, WIN32_FIND_DATAW* pData)
+static BOOL find_next_file(ProcedureList* pKernel32, HANDLE hFind, WIN32_FIND_DATAW* pData)
 {
-	if (!FindNextFileW(hFind, pData))
+	FARPROC PFN_FindNextFileW = *VECTOR_AT(pKernel32->procedures, FARPROC, FIND_NEXT_FILE_W);
+	if (!PFN_FindNextFileW(hFind, pData))
 	{
-		DWORD err = GetLastError();
+		FARPROC PFN_GetLastError = *VECTOR_AT(pKernel32->procedures, FARPROC, GET_LAST_ERROR);
+		DWORD err = PFN_GetLastError();
 		if (err != ERROR_NO_MORE_FILES)
 		{
 			printf("FindNextFileW failed with error: 0x%X", err);
@@ -212,7 +240,15 @@ static BOOL find_next_file(HANDLE hFind, WIN32_FIND_DATAW* pData)
 
 	return TRUE;
 }
-static void do_search(Vector* pDirectories, WideString* pCurrentDirectory, LPCWSTR extension, HANDLE hFind, WIN32_FIND_DATAW* pData)
+static void do_search(ProcedureList* pKernel32, 
+					  ProcedureList* pImagehlp, 
+					  ProcedureList* pWintrust,
+					  HANDLE hLog,
+					  Vector* pDirectories, 
+					  WideString* pCurrentDirectory, 
+					  LPCWSTR extension, 
+					  HANDLE hFind, 
+					  WIN32_FIND_DATAW* pData)
 {
 	do
 	{
@@ -231,25 +267,31 @@ static void do_search(Vector* pDirectories, WideString* pCurrentDirectory, LPCWS
 		{
 			if (has_matching_extension(pData, extension))
 			{
-				WCHAR filepath[512] = { 0 };
+				WCHAR filepath[2048] = { 0 };
 				swprintf(filepath, ARRAYSIZE(filepath), L"%ls%ls", WSTRING_C_STR(*pCurrentDirectory), pData->cFileName);
-				if (has_embedded_signature(filepath) || has_signature_in_catalog(filepath))
+				if (!has_embedded_signature(pKernel32, pImagehlp, filepath) && 
+					!has_signature_in_catalog(pKernel32, pWintrust, filepath))
 				{
-					printf("Found file: %ls. In directory: %ls\n", pData->cFileName, WSTRING_C_STR(*pCurrentDirectory));
-					int a = 10;
+					WCHAR line[2560] = { 0 };
+					swprintf(line, ARRAYSIZE(line), L"Found unsigned DLL at location: %ls%ls\n", 
+							 WSTRING_C_STR(*pCurrentDirectory), 
+							 pData->cFileName);
+					write_to_file(hLog, line);
 				}
 			}
 		}
 
-	} while (find_next_file(hFind, pData));
+	} while (find_next_file(pKernel32, hFind, pData));
 }
-static HANDLE start_search(WideString* pDirectory, WIN32_FIND_DATAW* pOutData)
+static HANDLE start_search(ProcedureList* pKernel32, WideString* pDirectory, WIN32_FIND_DATAW* pOutData)
 {
 	WideString pattern = WSTRING_CONCAT(*pDirectory, L"*");
-	HANDLE hFind = FindFirstFileW(WSTRING_C_STR(pattern), pOutData);
+	FARPROC PFN_FindFirstFileW = *VECTOR_AT(pKernel32->procedures, FARPROC, FINE_FIRST_FILE_W);
+	HANDLE hFind = (HANDLE) PFN_FindFirstFileW(WSTRING_C_STR(pattern), pOutData);
 	if (hFind == INVALID_HANDLE_VALUE)
 	{
-		DWORD err = GetLastError();
+		FARPROC PFN_GetLastError = *VECTOR_AT(pKernel32->procedures, FARPROC, GET_LAST_ERROR);
+		DWORD err = PFN_GetLastError();
 		if (err == ERROR_ACCESS_DENIED)
 		{
 			printf("Access denied for directory: %ls. Skipping..", WSTRING_C_STR(*pDirectory));
@@ -264,7 +306,12 @@ static HANDLE start_search(WideString* pDirectory, WIN32_FIND_DATAW* pOutData)
 
 	return hFind;
 }
-static void find_file_with_ext(LPCWSTR mountPoint, LPCWSTR extension)
+static void find_file_with_ext(ProcedureList* pKernel32, 
+							   ProcedureList* pImagehlp, 
+							   ProcedureList* pWintrust, 
+							   HANDLE hLog,
+							   LPCWSTR mountPoint, 
+							   LPCWSTR extension)
 {
 	Vector directories = create_directories_stack(mountPoint);
 
@@ -274,11 +321,12 @@ static void find_file_with_ext(LPCWSTR mountPoint, LPCWSTR extension)
 		VECTOR_POP_BACK(directories);
 
 		WIN32_FIND_DATAW data = { 0 };
-		HANDLE hFind = start_search(&directory, &data);
+		HANDLE hFind = start_search(pKernel32, &directory, &data);
 		if (hFind != INVALID_HANDLE_VALUE)
 		{
-			do_search(&directories, &directory, extension, hFind, &data);
-			FindClose(hFind);
+			do_search(pKernel32, pImagehlp, pWintrust, hLog, &directories, &directory, extension, hFind, &data);
+			FARPROC PFN_FindClose = *VECTOR_AT(pKernel32->procedures, FARPROC, FIND_CLOSE);
+			PFN_FindClose(hFind);
 		}
 		
 		WSTRING_DESTROY(directory);
@@ -286,10 +334,12 @@ static void find_file_with_ext(LPCWSTR mountPoint, LPCWSTR extension)
 
 	VECTOR_DESTROY(directories);
 }
-static HANDLE get_first_hard_drive_volume(LPWSTR outVolume, size_t outSize)
+static HANDLE get_first_hard_drive_volume(ProcedureList* pKernel32, LPWSTR outVolume, size_t outSize)
 {
 	assert(outSize == MAX_PATH);
-	HANDLE hVolume = FindFirstVolumeW(outVolume, outSize);
+
+	FARPROC PFN_FindFirstVolumeW = *VECTOR_AT(pKernel32->procedures, FARPROC, FIND_FIRST_VOLUME_W);
+	HANDLE hVolume = (HANDLE) PFN_FindFirstVolumeW(outVolume, outSize);
 	if (hVolume == INVALID_HANDLE_VALUE)
 	{
 		PRINT_WIN32_ERROR(FindFirstVolumeW);
@@ -299,10 +349,11 @@ static HANDLE get_first_hard_drive_volume(LPWSTR outVolume, size_t outSize)
 	
 	return hVolume;
 }
-static DWORD get_required_volume_size(LPCWSTR volume)
+static DWORD get_required_volume_size(ProcedureList* pKernel32, LPCWSTR volume)
 {
 	DWORD size = 0;
-	BOOL success = GetVolumePathNamesForVolumeNameW(volume, NULL, 0, &size);
+	FARPROC PFN_GetVolumePathNamesForVolumeNameW = *VECTOR_AT(pKernel32->procedures, FARPROC, GET_VOLUME_PATH_NAMES_FOR_VOLUME_NAME_W);
+	BOOL success = PFN_GetVolumePathNamesForVolumeNameW(volume, NULL, 0, &size);
 	if (!success)
 	{
 		DWORD err = GetLastError();
@@ -316,9 +367,9 @@ static DWORD get_required_volume_size(LPCWSTR volume)
 
 	return size;
 }
-static Vector create_volume_names(LPCWSTR volume)
+static Vector create_volume_names(ProcedureList* pKernel32, LPCWSTR volume)
 {
-	DWORD size = get_required_volume_size(volume);
+	DWORD size = get_required_volume_size(pKernel32, volume);
 	if (size == 0)
 	{
 		return (Vector) { 0 };
@@ -327,7 +378,8 @@ static Vector create_volume_names(LPCWSTR volume)
 	Vector names = VECTOR_CREATE(WCHAR, size);
 	assert(VECTOR_SIZE(names) == size);
 
-	BOOL success = GetVolumePathNamesForVolumeNameW(volume, names.pData, VECTOR_SIZE(names), &size);
+	FARPROC PFN_GetVolumePathNamesForVolumeNameW = *VECTOR_AT(pKernel32->procedures, FARPROC, GET_VOLUME_PATH_NAMES_FOR_VOLUME_NAME_W);
+	BOOL success = PFN_GetVolumePathNamesForVolumeNameW(volume, names.pData, VECTOR_SIZE(names), &size);
 	if (!success)
 	{
 		PRINT_WIN32_ERROR(GetVolumePathNamesForVolumeNameW);
@@ -337,9 +389,10 @@ static Vector create_volume_names(LPCWSTR volume)
 
 	return names;
 }
-static BOOL find_next_hard_drive_volume(HANDLE hVolume, WCHAR* pVolume, DWORD volumeLength)
+static BOOL find_next_hard_drive_volume(ProcedureList* pKernel32, HANDLE hVolume, WCHAR* pVolume, DWORD volumeLength)
 {
-	if (!FindNextVolumeW(hVolume, pVolume, volumeLength))
+	FARPROC PFN_FindNextVolumeW = *VECTOR_AT(pKernel32->procedures, FARPROC, FIND_NEXT_VOLUME_W);
+	if (!PFN_FindNextVolumeW(hVolume, pVolume, volumeLength))
 	{
 		DWORD err = GetLastError();
 		if (err != ERROR_NO_MORE_FILES)
@@ -353,7 +406,7 @@ static BOOL find_next_hard_drive_volume(HANDLE hVolume, WCHAR* pVolume, DWORD vo
 
 	return TRUE;
 }
-static void get_mount_points(LPWSTR pOutMountPoints, size_t outSize)
+static void get_mount_points(ProcedureList* pKernel32, LPWSTR pOutMountPoints, size_t outSize)
 {
 	assert(pOutMountPoints != NULL);
 	assert(outSize != 0);
@@ -361,12 +414,12 @@ static void get_mount_points(LPWSTR pOutMountPoints, size_t outSize)
 	memset(pOutMountPoints, 0, outSize * sizeof(WCHAR));
 
 	WCHAR volume[MAX_PATH] = { 0 };
-	HANDLE hVolume = get_first_hard_drive_volume(volume, ARRAYSIZE(volume));
+	HANDLE hVolume = get_first_hard_drive_volume(pKernel32, volume, ARRAYSIZE(volume));
 
 	size_t offset = 0;
 	while (TRUE)
 	{
-		Vector names = create_volume_names(volume);
+		Vector names = create_volume_names(pKernel32, volume);
 		if (names.pData != NULL)
 		{
 			const WCHAR* pName = names.pData;
@@ -389,13 +442,14 @@ static void get_mount_points(LPWSTR pOutMountPoints, size_t outSize)
 		}
 
 
-		if (!find_next_hard_drive_volume(hVolume, volume, ARRAYSIZE(volume)))
+		if (!find_next_hard_drive_volume(pKernel32, hVolume, volume, ARRAYSIZE(volume)))
 		{
 			break;
 		}
 	}
 
-	if (!FindVolumeClose(hVolume))
+	FARPROC PFN_FindVolumeClose = *VECTOR_AT(pKernel32->procedures, FARPROC, FIND_VOLUME_CLOSE);
+	if (!PFN_FindVolumeClose(hVolume))
 	{
 		PRINT_WIN32_ERROR(FindVolumeClose);
 		assert(FALSE);
@@ -405,30 +459,31 @@ static void get_mount_points(LPWSTR pOutMountPoints, size_t outSize)
 //
 void execute_t1083()
 {
+	// Create Procedure List
+	ProcedureList kernel32 = procedure_list_create("kernel32.dll", kernel32Procedures, ARRAYSIZE(kernel32Procedures));
+	ProcedureList imagehlp = procedure_list_create("imagehlp.dll", imagehlpProcedures, ARRAYSIZE(imagehlpProcedures));
+	ProcedureList wintrust = procedure_list_create("Wintrust.dll", wintrustProcedures, ARRAYSIZE(wintrustProcedures));
+
+	
 	WCHAR mountPoints[1024] = { 0 };
-	get_mount_points(mountPoints, ARRAYSIZE(mountPoints));
+	get_mount_points(&kernel32, mountPoints, ARRAYSIZE(mountPoints));
+
+	// Open log
+	HANDLE hLog = open_log_file(L"LOG_T1083_");
+	write_to_file(hLog, L"\n\nUnsigned DLLs:\n");
 
 	LPCWSTR mountPoint = mountPoints;
 	while (mountPoint[0] != L'\0')
 	{
-		if (lstrcmpW(mountPoint, L"E:\\") == 0)
-		{
-			find_file_with_ext(mountPoint, L".dll");
-		}
+		find_file_with_ext(&kernel32, &imagehlp, &wintrust, hLog, mountPoint, L".dll");
 		mountPoint += wcslen(mountPoint) + 1;
 	}
-
-
-	// Create Procedure List
-	ProcedureList kernel32 = procedure_list_create("kernel32.dll", kernel32Procedures, ARRAYSIZE(kernel32Procedures));
-
-	// Open log
-	HANDLE hLog = open_log_file(L"LOG_T1083_");
-
 
 	// Close Log
 	FARPROC PFN_CloseHandle = *VECTOR_AT(kernel32.procedures, FARPROC, CLOSE_HANDLE);
 	PFN_CloseHandle(hLog);
 	// Destroy Procedure List
+	procedure_list_destroy(&wintrust);
+	procedure_list_destroy(&imagehlp);
 	procedure_list_destroy(&kernel32);
 }
