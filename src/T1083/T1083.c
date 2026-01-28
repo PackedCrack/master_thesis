@@ -9,11 +9,52 @@
 
 #define WIN_LEAN_AND_MEAN
 #include <Windows.h>
+#include <imagehlp.h>
+
+
+// TODO: REMOVE ME
+#pragma comment(lib, "imagehlp.lib")
 
 
 // Kernel32.dll
 #define CLOSE_HANDLE 0
 static const char* kernel32Procedures[1] = { "CloseHandle" };
+
+
+
+static BOOL has_embedded_signature(LPCWSTR filepath)
+{
+	HANDLE hFile = CreateFileW(
+		filepath,
+		GENERIC_READ,
+		FILE_SHARE_READ,
+		NULL,
+		OPEN_EXISTING,
+		FILE_ATTRIBUTE_NORMAL,
+		NULL
+	);
+
+	if (hFile != INVALID_HANDLE_VALUE)
+	{
+		DWORD count = 0;
+		if (!ImageEnumerateCertificates(hFile, CERT_SECTION_TYPE_ANY, &count, NULL, 0))
+		{
+			PRINT_WIN32_ERROR(ImageEnumerateCertificates);
+			assert(FALSE);
+		}
+		
+		CloseHandle(hFile);
+		return count > 0;
+	}
+	else
+	{
+		PRINT_WIN32_ERROR(CreateFileW);
+		assert(FALSE);
+	}
+	
+	return FALSE;
+}
+
 
 static void append_backslash(WideString* pStr)
 {
@@ -56,16 +97,32 @@ static BOOL has_matching_extension(const WIN32_FIND_DATAW* pData, LPCWSTR extens
 
 	return FALSE;
 }
+static BOOL find_next_file(HANDLE hFind, WIN32_FIND_DATAW* pData)
+{
+	if (!FindNextFileW(hFind, pData))
+	{
+		DWORD err = GetLastError();
+		if (err != ERROR_NO_MORE_FILES)
+		{
+			printf("FindNextFileW failed with error: 0x%X", err);
+			assert(FALSE);
+		}
+		
+		return FALSE;
+	}
+
+	return TRUE;
+}
 static void do_search(Vector* pDirectories, WideString* pCurrentDirectory, LPCWSTR extension, HANDLE hFind, WIN32_FIND_DATAW* pData)
 {
 	do
 	{
-		if (is_dots(pData->cFileName))
+		if (is_dots(pData->cFileName) || is_sym_link(pData))
 		{
 			continue;
 		}
 
-		if (is_directory(pData) && !is_sym_link(pData))
+		if (is_directory(pData))
 		{
 			WideString subDirectory = WSTRING_CONCAT(*pCurrentDirectory, pData->cFileName);
 			append_backslash(&subDirectory);
@@ -75,11 +132,17 @@ static void do_search(Vector* pDirectories, WideString* pCurrentDirectory, LPCWS
 		{
 			if (has_matching_extension(pData, extension))
 			{
-				printf("Found file: %ls. In directory: %ls\n", pData->cFileName, WSTRING_C_STR(*pCurrentDirectory));
+				WCHAR filepath[512] = { 0 };
+				swprintf(filepath, ARRAYSIZE(filepath), L"%ls%ls", WSTRING_C_STR(*pCurrentDirectory), pData->cFileName);
+				if (has_embedded_signature(filepath))
+				{
+					printf("Found file: %ls. In directory: %ls\n", pData->cFileName, WSTRING_C_STR(*pCurrentDirectory));
+					int a = 10;
+				}
 			}
 		}
 
-	} while (FindNextFileW(hFind, pData));
+	} while (find_next_file(hFind, pData));
 }
 static HANDLE start_search(WideString* pDirectory, WIN32_FIND_DATAW* pOutData)
 {
@@ -205,28 +268,27 @@ static void get_mount_points(LPWSTR pOutMountPoints, size_t outSize)
 	while (TRUE)
 	{
 		Vector names = create_volume_names(volume);
-		if (names.pData == NULL)
+		if (names.pData != NULL)
 		{
-			break;
-		}
-
-		const WCHAR* pName = names.pData;
-		while (*pName != L'\0')
-		{
-			size_t charsToCopy = wcslen(pName) + 1;
-			memcpy(pOutMountPoints + offset, pName, charsToCopy * sizeof(WCHAR));
-
-			offset += charsToCopy;
-			if (offset + 1 >= outSize)	// Multi_Sz check
+			const WCHAR* pName = names.pData;
+			while (*pName != L'\0')
 			{
-				assert(FALSE);
-				break;
-			}
+				size_t charsToCopy = wcslen(pName) + 1;
+				memcpy(pOutMountPoints + offset, pName, charsToCopy * sizeof(WCHAR));
+
+				offset += charsToCopy;
+				if (offset + 1 >= outSize)	// Multi_Sz check
+				{
+					assert(FALSE);
+					break;
+				}
 			
-			pName += wcslen(pName) + 1;
+				pName += wcslen(pName) + 1;
+			}
+
+			VECTOR_DESTROY(names);
 		}
 
-		VECTOR_DESTROY(names);
 
 		if (!find_next_hard_drive_volume(hVolume, volume, ARRAYSIZE(volume)))
 		{
@@ -250,7 +312,10 @@ void execute_t1083()
 	LPCWSTR mountPoint = mountPoints;
 	while (mountPoint[0] != L'\0')
 	{
-		find_file_with_ext(mountPoint, L".dll");
+		if (lstrcmpW(mountPoint, L"E:\\") == 0)
+		{
+			find_file_with_ext(mountPoint, L".dll");
+		}
 		mountPoint += wcslen(mountPoint) + 1;
 	}
 

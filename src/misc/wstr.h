@@ -31,4 +31,4 @@ void details_wstring_push_back(WideString* pStr, wchar_t c);
 #define WSTRING_PUSH_BACK(string, c) details_wstring_push_back(&string, c);
 
 WideString details_wstring_concatenate(WideString* pLhs, const wchar_t* pRhs);
-#define WSTRING_CONCAT(string, LPCWSTR) details_wstring_concatenate(&string, LPCWSTR);
+#define WSTRING_CONCAT(string, LPCWSTR) details_wstring_concatenate(&string, LPCWSTR)

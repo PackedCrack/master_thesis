@@ -49,6 +49,7 @@ size_t details_wstring_size(const WideString* pStr)
 wchar_t details_wstring_back(const WideString* pStr)
 {
     assert(pStr->array.pData != NULL);
+    assert(pStr->length > 0);
 
     wchar_t* string = pStr->array.pData;
     return string[pStr->length - 1];
