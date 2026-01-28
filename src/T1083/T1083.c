@@ -10,10 +10,16 @@
 #define WIN_LEAN_AND_MEAN
 #include <Windows.h>
 #include <imagehlp.h>
+#include <wintrust.h>
+#include <softpub.h>
+#include <mscat.h>
+#include <mssip.h>
 
 
 // TODO: REMOVE ME
 #pragma comment(lib, "imagehlp.lib")
+#pragma comment(lib, "wintrust.lib")
+#pragma comment(lib, "crypt32.lib")
 
 
 // Kernel32.dll
@@ -21,7 +27,102 @@
 static const char* kernel32Procedures[1] = { "CloseHandle" };
 
 
+static DWORD get_hash_size(HCATADMIN hCatAdmin, HANDLE hFile)
+{
+	DWORD cbHash = 0;
+	if (!CryptCATAdminCalcHashFromFileHandle2(hCatAdmin, hFile, &cbHash, NULL, 0))
+	{
+		return 0;
+	}
 
+	return cbHash;
+}
+static Vector get_hash(HCATADMIN hCatAdmin, HANDLE hFile)
+{
+	// 3) Compute hash
+	DWORD size = get_hash_size(hCatAdmin, hFile);
+	if (size > 0)
+	{
+		Vector hash = VECTOR_CREATE(BYTE, size);
+		if (CryptCATAdminCalcHashFromFileHandle2(hCatAdmin, hFile, &size, hash.pData, 0))
+		{
+			return hash;
+		}
+		else
+		{
+			PRINT_WIN32_ERROR(CryptCATAdminReleaseContext);
+			assert(FALSE);
+			VECTOR_DESTROY(hash);
+		}
+	}
+	else
+	{
+		PRINT_WIN32_ERROR(CryptCATAdminReleaseContext);
+		assert(FALSE);
+	}
+
+	return (Vector) { 0 };
+}
+static BOOL has_signature_in_catalog(LPCWSTR filepath)
+{
+	BOOL success = FALSE;
+
+	HANDLE hFile = CreateFileW(
+		filepath,
+		GENERIC_READ,
+		FILE_SHARE_READ,
+		NULL,
+		OPEN_EXISTING,
+		FILE_ATTRIBUTE_NORMAL,
+		NULL
+	);
+	if (hFile == INVALID_HANDLE_VALUE)
+	{
+		PRINT_WIN32_ERROR(CreateFileW);
+		assert(FALSE);
+		return FALSE;
+	}
+	else
+	{
+		HCATADMIN hCatAdmin = NULL;
+		GUID subSystem = DRIVER_ACTION_VERIFY;
+		if (!CryptCATAdminAcquireContext2(&hCatAdmin, &subSystem, NULL, NULL, 0))
+		{ 
+			PRINT_WIN32_ERROR(CryptCATAdminAcquireContext2);
+			assert(FALSE);
+		}
+		else
+		{
+
+			Vector hash = get_hash(hCatAdmin, hFile);
+			if (hash.pData != NULL)
+			{
+				HCATINFO hCatInfo = CryptCATAdminEnumCatalogFromHash(hCatAdmin, hash.pData, (DWORD) VECTOR_SIZE(hash), 0, NULL);
+				success = hCatInfo != NULL;
+				if (success)
+				{
+					if (!CryptCATAdminReleaseCatalogContext(hCatAdmin, hCatInfo, 0))
+					{
+						PRINT_WIN32_ERROR(CryptCATAdminReleaseCatalogContext);
+						assert(FALSE);
+					}
+				}
+
+				VECTOR_DESTROY(hash);
+			}
+
+			if (!CryptCATAdminReleaseContext(hCatAdmin, 0))
+			{
+				PRINT_WIN32_ERROR(CryptCATAdminReleaseContext);
+				assert(FALSE);
+			}
+		}
+		
+		CloseHandle(hFile);
+	}
+
+	return success;
+}
 static BOOL has_embedded_signature(LPCWSTR filepath)
 {
 	HANDLE hFile = CreateFileW(
@@ -54,8 +155,6 @@ static BOOL has_embedded_signature(LPCWSTR filepath)
 	
 	return FALSE;
 }
-
-
 static void append_backslash(WideString* pStr)
 {
 	wchar_t lastChar = WSTRING_BACK(*pStr);
@@ -134,7 +233,7 @@ static void do_search(Vector* pDirectories, WideString* pCurrentDirectory, LPCWS
 			{
 				WCHAR filepath[512] = { 0 };
 				swprintf(filepath, ARRAYSIZE(filepath), L"%ls%ls", WSTRING_C_STR(*pCurrentDirectory), pData->cFileName);
-				if (has_embedded_signature(filepath))
+				if (has_embedded_signature(filepath) || has_signature_in_catalog(filepath))
 				{
 					printf("Found file: %ls. In directory: %ls\n", pData->cFileName, WSTRING_C_STR(*pCurrentDirectory));
 					int a = 10;
