@@ -5,6 +5,7 @@
 #include "T1082/T1082.h"
 #include "T1083/T1083.h"
 #include "T1057/T1057.h"
+#include "T1070.004/T1070.004.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -37,7 +38,9 @@ int main(int argc, char** argv)
 	
 	//execute_t1083();
 
-	execute_t1057();
+	//execute_t1057();
+
+	execute_t1070_004();
 
 	return 0;
 }
