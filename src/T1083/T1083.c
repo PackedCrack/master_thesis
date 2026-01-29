@@ -112,7 +112,6 @@ static BOOL has_signature_in_catalog(ProcedureList* pKernel32, ProcedureList* pW
 		}
 		else
 		{
-
 			Vector hash = get_hash(pWintrust, hCatAdmin, hFile);
 			if (hash.pData != NULL)
 			{
