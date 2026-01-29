@@ -226,7 +226,7 @@ static BOOL is_virt_process(LPCWSTR name)
 }
 static BOOL is_credential_process(LPCWSTR name)
 {
-	return is_one_of(name, virtProcesses, NUM_CREDENTIAL_PROCESSES);
+	return is_one_of(name, credentialProcesses, NUM_CREDENTIAL_PROCESSES);
 }
 static WideString create_process_name(ProcedureList* pKernel32, HANDLE hProcess)
 {
