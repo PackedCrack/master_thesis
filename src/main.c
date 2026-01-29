@@ -4,6 +4,7 @@
 
 #include "T1082/T1082.h"
 #include "T1083/T1083.h"
+#include "T1057/T1057.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -32,9 +33,11 @@ int main(int argc, char** argv)
 
 	set_seed();
 
-	execute_t1082();
+	//execute_t1082();
 	
-	execute_t1083();
+	//execute_t1083();
+
+	execute_t1057();
 
 	return 0;
 }
