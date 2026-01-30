@@ -64,13 +64,14 @@ function Show-Popup-Confirmation
 
 
 ############################################################################
-
+#                                Remove Logs                               #
+############################################################################
 $desktop = [Environment]::GetFolderPath('Desktop')
 $outputDir = Join-Path $desktop 'output'
 
 if (-not (Test-Path -Path $outputDir -PathType Container))
 {
-    Show-Popup-Info -Message "The log directory '$outputDir' does not exist."
+    $null = Show-Popup-Info -Message "The log directory '$outputDir' does not exist."
 }
 else 
 {
@@ -80,12 +81,99 @@ else
         try
         {
             Remove-Item -Path $outputDir -Recurse -Force -ErrorAction Stop
-            Show-Popup-Info -Message "Deleted the log directory: '$outputDir'"
+            $null = Show-Popup-Info -Message "Deleted the log directory: '$outputDir'"
         } 
         catch
         {
-            Show-Popup-Warning -Message "Deletion failed: $($_.Exception.Message)"
+            $null = Show-Popup-Warning -Message "Deletion failed: $($_.Exception.Message)"
         }
     } 
 }
 
+############################################################################
+#                           Remove Regsitry Keys                           #
+############################################################################
+
+
+function Registry-Key-Exists
+{
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$key,
+
+        [Parameter(Mandatory)]
+        [string]$valueName
+    )
+
+    try 
+    {
+        $null = Get-ItemPropertyValue -Path $key -Name $valueName -ErrorAction Stop
+        return $true
+    } 
+    catch [System.Management.Automation.PSArgumentException] 
+    {
+        $null = Show-Popup-Info -Message "$($_.Exception.Message)"
+    }
+    catch [System.Management.Automation.ItemNotFoundException] 
+    {
+        $null = Show-Popup-Warning -Message "$($_.Exception.Message)"
+    }
+    catch [System.UnauthorizedAccessException] 
+    {
+        $null = Show-Popup-Warning -Message "$($_.Exception.Message)"
+    }
+    catch 
+    {
+        $null = Show-Popup-Warning -Message "$($_.Exception.Message)"
+
+    }
+    return $false
+}
+
+function Delete-Registry-Value
+{
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$key,
+
+        [Parameter(Mandatory)]
+        [string]$valueName
+    )
+
+    try 
+    {
+        Remove-ItemProperty -Path $key -Name $valueName -Force -ErrorAction Stop
+        $null = Show-Popup-Info -Message "Deleted Run value '$valueName' located in $key."
+    } 
+    catch 
+    {
+        $null = Show-Popup-Warning -Message "Deletion failed: $($_.Exception.Message)"
+    }
+}
+
+$valueName = "__Pseudo_Malware"
+
+$runHKCU = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"
+$exists = Registry-Key-Exists -key $runHKCU -valueName $valueName
+if ($exists) 
+{
+    $confirmed = Show-Popup-Confirmation -Message "Delete HKEY_CURRENT_USER Run value '$valueName'?"
+    if ($confirmed -eq $POPUP_RESULT_OK) 
+    {
+        Delete-Registry-Value -key $runHKCU -valueName $valueName
+    }
+}
+
+
+$runHKLM = "HKLM:\Software\Microsoft\Windows\CurrentVersion\Run"
+$exists = Registry-Key-Exists -key $runHKLM -valueName $valueName
+if ($exists) 
+{
+    $confirmed = Show-Popup-Confirmation -Message "Delete HKEY_LOCAL_MACHINE Run value '$valueName'?"
+    if ($confirmed -eq $POPUP_RESULT_OK) 
+    {
+        Delete-Registry-Value -key $runHKLM -valueName $valueName
+    }
+}
