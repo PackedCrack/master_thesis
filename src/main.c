@@ -35,7 +35,7 @@ int main(int argc, char** argv)
 
 	set_seed();
 
-	execute_t1070_004(argv);
+	//execute_t1070_004(argv);
 
 	//execute_t1082();
 	
