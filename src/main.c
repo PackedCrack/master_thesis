@@ -40,7 +40,7 @@ int main(int argc, char** argv)
 
 	//execute_t1057();
 
-	execute_t1070_004();
+	execute_t1070_004(argv);
 
 	return 0;
 }

@@ -9,5 +9,6 @@
 void print_win32_err(const char* func);
 #define PRINT_WIN32_ERROR(callable) print_win32_err(#callable);
 
+void desktop_filepath(wchar_t* pOut, size_t outSize);
 HANDLE open_log_file(LPWSTR basename);
 void write_to_file(HANDLE hFile, const wchar_t* content);

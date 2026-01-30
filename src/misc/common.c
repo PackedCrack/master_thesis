@@ -27,29 +27,6 @@ static LPSTR format_message(DWORD code)
 
 	return pMsg;
 }
-static void desktop_filepath(wchar_t* pOut, size_t outSize)
-{
-	PWSTR pFilepath = NULL;
-	HRESULT r = SHGetKnownFolderPath(&FOLDERID_Desktop,
-									 0,
-									 NULL,
-									 &pFilepath);
-	if (SUCCEEDED(r))
-	{
-		size_t len = wcslen(pFilepath);
-		assert(len * sizeof(WCHAR) < outSize);
-
-		memcpy(pOut, pFilepath, len * sizeof(WCHAR));
-		pOut[len] = L'\0';
-
-		CoTaskMemFree(pFilepath);
-	}
-	else
-	{
-		printf("Failed to obtain Desktop filepath.");
-		assert(FALSE);
-	}
-}
 static size_t generate_filename(const wchar_t* basename, wchar_t* pOut, size_t outSize)
 {
 	assert(basename != NULL);
@@ -99,6 +76,29 @@ static size_t get_log_filepath(LPWSTR basename, LPWSTR pOut, size_t outSize)
 }
 //
 //
+void desktop_filepath(wchar_t* pOut, size_t outSize)
+{
+	PWSTR pFilepath = NULL;
+	HRESULT r = SHGetKnownFolderPath(&FOLDERID_Desktop,
+									 0,
+									 NULL,
+									 &pFilepath);
+	if (SUCCEEDED(r))
+	{
+		size_t len = wcslen(pFilepath);
+		assert(len * sizeof(WCHAR) < outSize);
+
+		memcpy(pOut, pFilepath, len * sizeof(WCHAR));
+		pOut[len] = L'\0';
+
+		CoTaskMemFree(pFilepath);
+	}
+	else
+	{
+		printf("Failed to obtain Desktop filepath.");
+		assert(FALSE);
+	}
+}
 void print_win32_err(const char* func)
 {
 	DWORD err = GetLastError();
