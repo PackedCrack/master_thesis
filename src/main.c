@@ -6,6 +6,7 @@
 #include "T1083/T1083.h"
 #include "T1057/T1057.h"
 #include "T1070.004/T1070.004.h"
+#include "T1547.001/T1547.001.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -34,13 +35,15 @@ int main(int argc, char** argv)
 
 	set_seed();
 
+	execute_t1070_004(argv);
+
 	//execute_t1082();
 	
 	//execute_t1083();
 
 	//execute_t1057();
 
-	execute_t1070_004(argv);
+	execute_t1574_001();
 
 	return 0;
 }
