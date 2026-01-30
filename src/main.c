@@ -43,7 +43,7 @@ int main(int argc, char** argv)
 
 	//execute_t1057();
 
-	execute_t1574_001();
+	execute_t1574_001(argv);
 
 	return 0;
 }
