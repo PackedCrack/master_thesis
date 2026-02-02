@@ -1,7 +1,7 @@
 add_subdirectory("misc")
 #add_subdirectory("T1005")
 add_subdirectory("T1057")
-#add_subdirectory("T1059.001")
+add_subdirectory("T1059.001")
 add_subdirectory("T1070.004")
 add_subdirectory("T1082")
 add_subdirectory("T1083")
