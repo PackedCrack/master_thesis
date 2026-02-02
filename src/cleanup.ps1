@@ -177,3 +177,45 @@ if ($exists)
         Delete-Registry-Value -key $runHKLM -valueName $valueName
     }
 }
+
+
+############################################################################
+#                      Remove Startup Link Files                           #
+############################################################################
+
+function Remove-Startup-File
+{
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$filepath
+    )
+
+    if (-not (Test-Path -Path $filepath -PathType Leaf))
+    {
+        $null = Show-Popup-Info -Message "Startup file '$filepath' does not exist."
+    }
+    else
+    {
+        $confirmed = Show-Popup-Confirmation -Message "Delete startup file '$filepath'?"
+        if ($confirmed -eq $POPUP_RESULT_OK)
+        {
+            try
+            {
+                Remove-Item -Path $filepath -Force -ErrorAction Stop
+                $null = Show-Popup-Info -Message "Deleted startup file: '$filepath'"
+            }
+            catch
+            {
+                $null = Show-Popup-Warning -Message "Deletion failed: $($_.Exception.Message)"
+            }
+        }
+    }
+}
+
+$startupDir = [Environment]::GetFolderPath('Startup')
+$startupFile = Join-Path $startupDir 'mal_techniques.exe'
+$startupFileDebug = Join-Path $startupDir 'mal_techniquesd.exe'
+
+Remove-Startup-File -filepath $startupFile
+Remove-Startup-File -filepath $startupFileDebug

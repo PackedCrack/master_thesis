@@ -268,7 +268,7 @@ static void add_lnk_to_startup_dir(ProcedureList* pKernel32, ProcedureList* pShe
 	WideString lnkLocation = append_filename(WSTRING_C_STR(target), startupFolder);
 	if (target.array.pData != NULL && lnkLocation.array.pData != NULL)
 	{
-		//store_lnk_file(pOle32, WSTRING_C_STR(target), WSTRING_C_STR(lnkLocation));
+		store_lnk_file(pOle32, WSTRING_C_STR(target), WSTRING_C_STR(lnkLocation));
 	}
 	if (target.array.pData != NULL)
 	{
