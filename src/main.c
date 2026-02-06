@@ -8,6 +8,7 @@
 #include "T1070.004/T1070.004.h"
 #include "T1547.001/T1547.001.h"
 #include "T1059.001/T1059.001.h"
+#include "T1005/T1005.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -46,7 +47,9 @@ int main(int argc, char** argv)
 
 	//execute_t1574_001(argv);
 	
-	execute_t1059_001();
+	//execute_t1059_001();
+
+	execute_t1005();
 
 	return 0;
 }
