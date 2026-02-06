@@ -189,7 +189,7 @@ static HANDLE open_process(ProcedureList* pKernel32, PID pid)
 		DWORD err = PFN_GetLastError();
 		if (err != ERROR_ACCESS_DENIED)
 		{
-			printf("OpenProcess failed with error: 0x%X", err);
+			printf("OpenProcess failed with error: 0x%lX", err);
 			assert(FALSE);
 		}
 	}
