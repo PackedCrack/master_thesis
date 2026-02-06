@@ -1,6 +1,7 @@
 SET(SOURCES
 	common.c
 	common.h
+	function_pointers.h
 	vector.c
 	vector.h
 	str.c

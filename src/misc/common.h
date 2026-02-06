@@ -12,3 +12,5 @@ void print_win32_err(const char* func);
 void desktop_filepath(wchar_t* pOut, size_t outSize);
 HANDLE open_log_file(LPWSTR basename);
 void write_to_file(HANDLE hFile, const wchar_t* content);
+void init_common();
+void deinit_common();

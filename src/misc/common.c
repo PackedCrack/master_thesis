@@ -1,16 +1,39 @@
 #include "common.h"
 
+#include "../runtime_linking.h"
+
+#include "function_pointers.h"
+
 // Win32
 #include <shlobj.h>
 // std
 #include <assert.h>
 #include <stdio.h>
 
+// Kernel32.dll
+#define FORMAT_MESSAGE_A 0
+#define CREATE_DIRECTORY_W 1
+#define GET_LAST_ERROR 2
+#define CREATE_FILE_W 3
+#define WRITE_FILE 4
+static const char* kernel32Procedures[5] = { "FormatMessageA", "CreateDirectoryW", "GetLastError",
+											 "CreateFileW", "WriteFile" };
+// Shell32.dll
+#define SH_GET_KNOWN_FOLDER_PATH 0
+static const char* shell32Procedures[1] = { "SHGetKnownFolderPath" };
+// Ole32.dll
+#define CO_TASK_MEM_FREE 0
+static const char* ole32Procedures[1] = { "CoTaskMemFree" };
+
+ProcedureList s_Kernel32;
+ProcedureList s_Shell32;
+ProcedureList s_Ole32;
 
 static LPSTR format_message(DWORD code)
 {
 	LPSTR pMsg = NULL;	// This is correct because FORMAT_MESSAGE_ALLOCATE_BUFFER is used.
-	DWORD length = FormatMessageA(
+	PFN_FormatMessageA format_message_a = *VECTOR_AT(s_Kernel32.procedures, PFN_FormatMessageA, FORMAT_MESSAGE_A);
+	DWORD length = format_message_a(
 		FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
 		NULL,
 		code,
@@ -68,7 +91,9 @@ static size_t get_log_filepath(LPWSTR basename, LPWSTR pOut, size_t outSize)
 
 	wcscat_s(pOut, outMaxLen, logPath);
 	wcscat_s(pOut, outMaxLen, folder);
-	CreateDirectoryW(pOut, NULL);
+
+	PFN_CreateDirectoryW create_directory_w = *VECTOR_AT(s_Kernel32.procedures, PFN_CreateDirectoryW, CREATE_DIRECTORY_W);
+	create_directory_w(pOut, NULL);
 
 	wcscat_s(pOut, outMaxLen, filename);
 
@@ -79,7 +104,10 @@ static size_t get_log_filepath(LPWSTR basename, LPWSTR pOut, size_t outSize)
 void desktop_filepath(wchar_t* pOut, size_t outSize)
 {
 	PWSTR pFilepath = NULL;
-	HRESULT r = SHGetKnownFolderPath(&FOLDERID_Desktop,
+	PFN_SHGetKnownFolderPath sh_get_known_folder_path = *VECTOR_AT(s_Shell32.procedures, 
+																   PFN_SHGetKnownFolderPath,
+																   SH_GET_KNOWN_FOLDER_PATH);
+	HRESULT r = sh_get_known_folder_path(&FOLDERID_Desktop,
 									 0,
 									 NULL,
 									 &pFilepath);
@@ -91,7 +119,8 @@ void desktop_filepath(wchar_t* pOut, size_t outSize)
 		memcpy(pOut, pFilepath, len * sizeof(WCHAR));
 		pOut[len] = L'\0';
 
-		CoTaskMemFree(pFilepath);
+		PFN_CoTaskMemFree co_task_mem_free = *VECTOR_AT(s_Ole32.procedures, PFN_CoTaskMemFree, CO_TASK_MEM_FREE);
+		co_task_mem_free(pFilepath);
 	}
 	else
 	{
@@ -101,7 +130,8 @@ void desktop_filepath(wchar_t* pOut, size_t outSize)
 }
 void print_win32_err(const char* func)
 {
-	DWORD err = GetLastError();
+	PFN_GetLastError get_last_error = *VECTOR_AT(s_Kernel32.procedures, PFN_GetLastError, GET_LAST_ERROR);
+	DWORD err = get_last_error();
 	if (err == FALSE)
 	{
 		printf("No reported Win32 error.\n");
@@ -117,7 +147,8 @@ HANDLE open_log_file(LPWSTR basename)
 	WCHAR logPath[1024] = { 0 };
 	size_t filenameLen = get_log_filepath(basename, logPath, sizeof(logPath));
 
-	HANDLE hFile = CreateFileW(logPath,
+	PFN_CreateFileW create_file_w = *VECTOR_AT(s_Kernel32.procedures, PFN_CreateFileW, CREATE_FILE_W);
+	HANDLE hFile = create_file_w(logPath,
 							   GENERIC_WRITE,
 							   FILE_SHARE_READ,
 							   NULL,
@@ -137,10 +168,23 @@ HANDLE open_log_file(LPWSTR basename)
 }
 void write_to_file(HANDLE hFile, const wchar_t* content)
 {
-	BOOL success = WriteFile(hFile, content, wcslen(content) * sizeof(WCHAR), NULL, NULL);
+	PFN_WriteFile write_file = *VECTOR_AT(s_Kernel32.procedures, PFN_WriteFile, WRITE_FILE);
+	BOOL success = write_file(hFile, content, wcslen(content) * sizeof(WCHAR), NULL, NULL);
 	if (!success)
 	{
 		PRINT_WIN32_ERROR(WriteFile);
 		assert(FALSE);
 	}
+}
+void init_common()
+{
+	s_Kernel32 = procedure_list_create("kernel32.dll", kernel32Procedures, ARRAYSIZE(kernel32Procedures));
+	s_Shell32 = procedure_list_create("shell32.dll", shell32Procedures, ARRAYSIZE(shell32Procedures));
+	s_Ole32 = procedure_list_create("ole32.dll", ole32Procedures, ARRAYSIZE(ole32Procedures));
+}
+void deinit_common()
+{
+	procedure_list_destroy(&s_Ole32);
+	procedure_list_destroy(&s_Shell32);
+	procedure_list_destroy(&s_Kernel32);
 }

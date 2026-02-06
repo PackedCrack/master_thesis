@@ -1,9 +1,10 @@
 #include "T1005.h"
 
 #include "../misc/common.h"
-#include "../runtime_linking.h"
+#include "../misc/function_pointers.h"
 #include "../misc/vector.h"
 #include "../misc/wstr.h"
+#include "../runtime_linking.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -260,8 +261,8 @@ static HANDLE find_first(ProcedureList* pKernel32, Queue* pQueue, PWIN32_FIND_DA
 	WideString pattern = make_wildcard_pattern(directory);
 	if (WSTRING_SIZE(pattern) != 0)
 	{
-		FARPROC PFN_FindFirstFileW = *VECTOR_AT(pKernel32->procedures, FARPROC, FIND_FIRST_FILE_W);
-		hFind = PFN_FindFirstFileW(WSTRING_C_STR(pattern), outData);
+		PFN_FindFirstFileW find_first_file_w = *VECTOR_AT(pKernel32->procedures, PFN_FindFirstFileW, FIND_FIRST_FILE_W);
+		hFind = find_first_file_w(WSTRING_C_STR(pattern), outData);
 
 		WSTRING_DESTROY(pattern);
 	}
@@ -358,8 +359,7 @@ static void log_files(ProcedureList* pKernel32,
 		HANDLE hFind = find_first(pKernel32, pQueue, &findData);
 		if (hFind != INVALID_HANDLE_VALUE)
 		{
-			FARPROC PFN_FindNextFileW = *VECTOR_AT(pKernel32->procedures, FARPROC, FIND_NEXT_FILE_W);
-
+			PFN_FindNextFileW find_next_file_w = *VECTOR_AT(pKernel32->procedures, PFN_FindNextFileW, FIND_NEXT_FILE_W);
 			do
 			{
 				if (is_directory(&findData))
@@ -372,11 +372,12 @@ static void log_files(ProcedureList* pKernel32,
 				}
 
 
-			} while (PFN_FindNextFileW(hFind, &findData));
+			} while (find_next_file_w(hFind, &findData));
 
 
-			FARPROC PFN_FindClose = *VECTOR_AT(pKernel32->procedures, FARPROC, FIND_CLOSE);
-			PFN_FindClose(hFind);
+			PFN_FindClose find_close = *VECTOR_AT(pKernel32->procedures, PFN_FindClose, FIND_CLOSE);
+			find_close(hFind);
+
 			queue_pop_front(pQueue);
 		}
 	}
@@ -398,11 +399,13 @@ static Queue init_queue(Vector* pRootDirs)
 WideString resolve_filepath(ProcedureList* pShell32, ProcedureList* pOle32, REFKNOWNFOLDERID knownFolder)
 {
 	PWSTR pFilepath = NULL;
-	FARPROC PFN_SHGetKnownFolderPath = *VECTOR_AT(pShell32->procedures, FARPROC, SH_GET_KNOWN_FOLDER_PATH);
-	HRESULT r = PFN_SHGetKnownFolderPath(knownFolder,
-									 0,
-									 NULL,
-									 &pFilepath);
+	PFN_SHGetKnownFolderPath sh_get_known_folder_path = *VECTOR_AT(pShell32->procedures, 
+																   PFN_SHGetKnownFolderPath, 
+																   SH_GET_KNOWN_FOLDER_PATH);
+	HRESULT r = sh_get_known_folder_path(knownFolder,
+									     0,
+									     NULL,
+									     &pFilepath);
 	if (!SUCCEEDED(r))
 	{
 		printf("Failed to resolve filepath. Error: 0x%lX.\n", r);
@@ -411,8 +414,8 @@ WideString resolve_filepath(ProcedureList* pShell32, ProcedureList* pOle32, REFK
 	
 	WideString s = WSTRING_CREATE_FROM_LPCWSTR(pFilepath);
 
-	FARPROC PFN_CoTaskMemFree = *VECTOR_AT(pOle32->procedures, FARPROC, CO_TASK_MEM_FREE);
-	PFN_CoTaskMemFree(pFilepath);
+	PFN_CoTaskMemFree co_task_mem_free = *VECTOR_AT(pOle32->procedures, PFN_CoTaskMemFree, CO_TASK_MEM_FREE);
+	co_task_mem_free(pFilepath);
 
 	return s;
 }

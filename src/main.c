@@ -1,3 +1,4 @@
+#include "misc/common.h"
 #include "misc/vector.h"
 #include "misc/str.h"
 #include "runtime_linking.h"
@@ -36,20 +37,23 @@ int main(int argc, char** argv)
 #endif
 
 	set_seed();
+	init_common();
 
-	//execute_t1070_004(argv);
+	execute_t1070_004(argv);
 
-	//execute_t1082();
+	execute_t1082();
 	
-	//execute_t1083();
+	execute_t1083();
 
-	//execute_t1057();
+	execute_t1057();
 
-	//execute_t1574_001(argv);
+	execute_t1574_001(argv);
 	
-	//execute_t1059_001();
+	execute_t1059_001();
 
 	execute_t1005();
+
+	deinit_common();
 
 	return 0;
 }

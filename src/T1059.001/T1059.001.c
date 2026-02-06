@@ -1,6 +1,7 @@
 #include "T1059.001.h"
 
 #include "../misc/common.h"
+#include "../misc/function_pointers.h"
 #include "../runtime_linking.h"
 
 #include <assert.h>
@@ -30,27 +31,29 @@ static launch_ps_1(ProcedureList* pKernel32)
 {
 	STARTUPINFOW si = { 0 };
 	PROCESS_INFORMATION pi = { 0 };
-	FARPROC PFN_CreateProcessW = *VECTOR_AT(pKernel32->procedures, FARPROC, CREATE_PROCESS_W);
-	if (!PFN_CreateProcessW(NULL, ps, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi))
+	PFN_CreateProcessW create_process_w = *VECTOR_AT(pKernel32->procedures, PFN_CreateProcessW, CREATE_PROCESS_W);
+	if (!create_process_w(NULL, ps, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi))
 	{
 		PRINT_WIN32_ERROR(CreateProcessW);
 		assert(FALSE);
 	}
 
 
-	FARPROC PFN_WaitForSingleObject = *VECTOR_AT(pKernel32->procedures, FARPROC, WAIT_FOR_SINGLE_OBJECT);
-	PFN_WaitForSingleObject(pi.hProcess, INFINITE);
+	PFN_WaitForSingleObject wait_for_single_object = *VECTOR_AT(pKernel32->procedures, 
+																PFN_WaitForSingleObject, 
+																WAIT_FOR_SINGLE_OBJECT);
+	wait_for_single_object(pi.hProcess, INFINITE);
 
-	FARPROC PFN_CloseHandle = *VECTOR_AT(pKernel32->procedures, FARPROC, CLOSE_HANDLE);
-	PFN_CloseHandle(pi.hThread);
-	PFN_CloseHandle(pi.hProcess);
+	PFN_CloseHandle close_handle = *VECTOR_AT(pKernel32->procedures, PFN_CloseHandle, CLOSE_HANDLE);
+	close_handle(pi.hThread);
+	close_handle(pi.hProcess);
 }
 static launch_ps_2(ProcedureList* pShell32)
 {
 	LPCWSTR args = L"-NoProfile -ExecutionPolicy Bypass echo \"Hello PowerShell!\"; Start-Sleep -Seconds 2";
 
-	FARPROC PFN_ShellExecuteW = *VECTOR_AT(pShell32->procedures, FARPROC, SHELL_EXECUTE_W);
-	if (PFN_ShellExecuteW(NULL, L"open", L"powershell.exe", args, NULL, SW_SHOWNORMAL) <= 32)
+	PFN_ShellExecuteW shell_execute_w = *VECTOR_AT(pShell32->procedures, PFN_ShellExecuteW, SHELL_EXECUTE_W);
+	if (shell_execute_w(NULL, L"open", L"powershell.exe", args, NULL, SW_SHOWNORMAL) <= 32)
 	{
 		PRINT_WIN32_ERROR(ShellExecuteW);
 		assert(FALSE);
@@ -58,8 +61,8 @@ static launch_ps_2(ProcedureList* pShell32)
 }
 static launch_ps_3(ProcedureList* pKernel32)
 {
-	FARPROC PFN_WinExec = *VECTOR_AT(pKernel32->procedures, FARPROC, WIN_EXEC);
-	int32_t err = PFN_WinExec("powershell.exe -NoProfile -ExecutionPolicy Bypass echo \"Hello PowerShell!\"; Start-Sleep -Seconds 2", 
+	PFN_WinExec win_exec = *VECTOR_AT(pKernel32->procedures, PFN_WinExec, WIN_EXEC);
+	int32_t err = win_exec("powershell.exe -NoProfile -ExecutionPolicy Bypass echo \"Hello PowerShell!\"; Start-Sleep -Seconds 2",
 							  SW_SHOWNORMAL);
 	if (err <= 31)
 	{

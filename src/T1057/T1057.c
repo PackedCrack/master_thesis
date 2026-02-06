@@ -1,6 +1,7 @@
 #include "T1057.h"
 
 #include "../misc/common.h"
+#include "../misc/function_pointers.h"
 #include "../misc/vector.h"
 #include "../misc/wstr.h"
 #include "../runtime_linking.h"
@@ -151,8 +152,8 @@ static Vector create_pids(ProcedureList* pKernel32, DWORD count)
 
 	DWORD byteSize = VECTOR_SIZE(tmp) * sizeof(PID);
 	DWORD neededByteSize = 0;
-	FARPROC PFN_K32EnumProcesses = *VECTOR_AT(pKernel32->procedures, FARPROC, K32_ENUM_PROCESSES);
-	if (!PFN_K32EnumProcesses(tmp.pData, byteSize, &neededByteSize))
+	PFN_K32EnumProcesses k32_enum_processes = *VECTOR_AT(pKernel32->procedures, PFN_K32EnumProcesses, K32_ENUM_PROCESSES);
+	if (!k32_enum_processes(tmp.pData, byteSize, &neededByteSize))
 	{
 		PRINT_WIN32_ERROR(K32EnumProcesses);
 		assert(FALSE);
@@ -181,12 +182,12 @@ static HANDLE open_process(ProcedureList* pKernel32, PID pid)
 		return NULL;
 	}
 
-	FARPROC PFN_OpenProcess = *VECTOR_AT(pKernel32->procedures, FARPROC, OPEN_PROCESS);
-	HANDLE hProcess = PFN_OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, pid);
+	PFN_OpenProcess open_process = *VECTOR_AT(pKernel32->procedures, PFN_OpenProcess, OPEN_PROCESS);
+	HANDLE hProcess = open_process(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, pid);
 	if (hProcess == NULL)
 	{
-		FARPROC PFN_GetLastError = *VECTOR_AT(pKernel32->procedures, FARPROC, GET_LAST_ERROR);
-		DWORD err = PFN_GetLastError();
+		PFN_GetLastError get_last_error = *VECTOR_AT(pKernel32->procedures, PFN_GetLastError, GET_LAST_ERROR);
+		DWORD err = get_last_error();
 		if (err != ERROR_ACCESS_DENIED)
 		{
 			printf("OpenProcess failed with error: 0x%lX", err);
@@ -230,14 +231,16 @@ static BOOL is_credential_process(LPCWSTR name)
 }
 static WideString create_process_name(ProcedureList* pKernel32, HANDLE hProcess)
 {
-	FARPROC PFN_K32GetModuleBaseNameW = *VECTOR_AT(pKernel32->procedures, FARPROC, K32_GET_MODULE_BASE_NAME_W);
+	PFN_K32GetModuleBaseNameW k32_get_module_base_name_w = *VECTOR_AT(pKernel32->procedures, 
+																	  PFN_K32GetModuleBaseNameW, 
+																	  K32_GET_MODULE_BASE_NAME_W);
 	
 	WCHAR tmpName[1024] = { 0 };
-	DWORD len = PFN_K32GetModuleBaseNameW(hProcess, NULL, tmpName, ARRAYSIZE(tmpName));
+	DWORD len = k32_get_module_base_name_w(hProcess, NULL, tmpName, ARRAYSIZE(tmpName));
 	if (len == 0)
 	{
-		FARPROC PFN_GetLastError = *VECTOR_AT(pKernel32->procedures, FARPROC, GET_LAST_ERROR);
-		DWORD err = PFN_GetLastError();
+		PFN_GetLastError get_last_error = *VECTOR_AT(pKernel32->procedures, PFN_GetLastError, GET_LAST_ERROR);
+		DWORD err = get_last_error();
 		// https://devblogs.microsoft.com/oldnewthing/20150716-00/?p=45131
 		if (err != ERROR_INVALID_HANDLE && err != ERROR_PARTIAL_COPY)	// partial copy can supposedly happen when 64bit reads 32bit or vice versa
 		{
@@ -284,8 +287,8 @@ static BOOL is_anti_malware(HANDLE hLog, LPCWSTR name)
 static HANDLE get_process_token(ProcedureList* pAdvApi32, HANDLE hProcess)
 {
 	HANDLE hToken = NULL;
-	FARPROC PFN_OpenProcessToken = *VECTOR_AT(pAdvApi32->procedures, FARPROC, OPEN_PROCESS_TOKEN);
-	if (!PFN_OpenProcessToken(hProcess, TOKEN_QUERY, &hToken))
+	PFN_OpenProcessToken open_process_token = *VECTOR_AT(pAdvApi32->procedures, PFN_OpenProcessToken, OPEN_PROCESS_TOKEN);
+	if (!open_process_token(hProcess, TOKEN_QUERY, &hToken))
 	{
 		PRINT_WIN32_ERROR(OpenProcessToken);
 		assert(FALSE);
@@ -297,11 +300,11 @@ static HANDLE get_process_token(ProcedureList* pAdvApi32, HANDLE hProcess)
 static DWORD get_token_info_length(ProcedureList* pKernel32, ProcedureList* pAdvApi32, HANDLE hToken)
 {
 	DWORD size = 0;
-	FARPROC PFN_GetTokenInformation = *VECTOR_AT(pAdvApi32->procedures, FARPROC, GET_TOKEN_INFORMATION);
-	if (!PFN_GetTokenInformation(hToken, TokenPrivileges, NULL, 0, &size))
+	PFN_GetTokenInformation get_token_information = *VECTOR_AT(pAdvApi32->procedures, PFN_GetTokenInformation, GET_TOKEN_INFORMATION);
+	if (!get_token_information(hToken, TokenPrivileges, NULL, 0, &size))
 	{
-		FARPROC PFN_GetLastError = *VECTOR_AT(pKernel32->procedures, FARPROC, GET_LAST_ERROR);
-		DWORD err = PFN_GetLastError();
+		PFN_GetLastError get_last_error = *VECTOR_AT(pKernel32->procedures, PFN_GetLastError, GET_LAST_ERROR);
+		DWORD err = get_last_error();
 		if (err != ERROR_INSUFFICIENT_BUFFER)
 		{
 			PRINT_WIN32_ERROR(GetTokenInformation);
@@ -316,8 +319,8 @@ static Vector create_token_info(ProcedureList* pKernel32, ProcedureList* pAdvApi
 	DWORD size = get_token_info_length(pKernel32, pAdvApi32, hToken);
 	Vector tokenInfo = VECTOR_CREATE(BYTE, size);
 
-	FARPROC PFN_GetTokenInformation = *VECTOR_AT(pAdvApi32->procedures, FARPROC, GET_TOKEN_INFORMATION);
-	if (!PFN_GetTokenInformation(hToken, TokenPrivileges, tokenInfo.pData, VECTOR_SIZE(tokenInfo), &size))
+	PFN_GetTokenInformation get_token_information = *VECTOR_AT(pAdvApi32->procedures, PFN_GetTokenInformation, GET_TOKEN_INFORMATION);
+	if (!get_token_information(hToken, TokenPrivileges, tokenInfo.pData, VECTOR_SIZE(tokenInfo), &size))
 	{
 		PRINT_WIN32_ERROR(GetTokenInformation);
 		assert(FALSE);
@@ -329,11 +332,13 @@ static Vector create_token_info(ProcedureList* pKernel32, ProcedureList* pAdvApi
 static DWORD get_privilege_name_length(ProcedureList* pKernel32, ProcedureList* pAdvApi32, PLUID_AND_ATTRIBUTES pPrivilege)
 {
 	DWORD length = 0;
-	FARPROC PFN_LookupPrivilegeNameW = *VECTOR_AT(pAdvApi32->procedures, FARPROC, LOOKUP_PRIVILEGE_NAME_W);
-	if (!PFN_LookupPrivilegeNameW(NULL, &pPrivilege->Luid, NULL, &length))
+	PFN_LookupPrivilegeNameW lookup_privilege_name_w = *VECTOR_AT(pAdvApi32->procedures, 
+																  PFN_LookupPrivilegeNameW, 
+																  LOOKUP_PRIVILEGE_NAME_W);
+	if (!lookup_privilege_name_w(NULL, &pPrivilege->Luid, NULL, &length))
 	{
-		FARPROC PFN_GetLastError = *VECTOR_AT(pKernel32->procedures, FARPROC, GET_LAST_ERROR);
-		DWORD err = PFN_GetLastError();
+		PFN_GetLastError get_last_error = *VECTOR_AT(pKernel32->procedures, PFN_GetLastError, GET_LAST_ERROR);
+		DWORD err = get_last_error();
 		if (err != ERROR_INSUFFICIENT_BUFFER)
 		{
 			PRINT_WIN32_ERROR(LookupPrivilegeNameW);
@@ -352,9 +357,11 @@ static WideString create_privilege_name(ProcedureList* pKernel32, ProcedureList*
 	}
 
 	Vector buffer = VECTOR_CREATE(WCHAR, length + 1);
-	FARPROC PFN_LookupPrivilegeNameW = *VECTOR_AT(pAdvApi32->procedures, FARPROC, LOOKUP_PRIVILEGE_NAME_W);
+	PFN_LookupPrivilegeNameW lookup_privilege_name_w = *VECTOR_AT(pAdvApi32->procedures, 
+																  PFN_LookupPrivilegeNameW, 
+																  LOOKUP_PRIVILEGE_NAME_W);
 	DWORD size = VECTOR_SIZE(buffer);
-	if (!PFN_LookupPrivilegeNameW(NULL, &pPrivilege->Luid, buffer.pData, &size))
+	if (!lookup_privilege_name_w(NULL, &pPrivilege->Luid, buffer.pData, &size))
 	{
 		PRINT_WIN32_ERROR(LookupPrivilegeNameW);
 		assert(FALSE);
@@ -400,8 +407,8 @@ static void log_process_rights(ProcedureList* pKernel32, ProcedureList* pAdvApi3
 			VECTOR_DESTROY(tokenInfo);
 		}
 
-		FARPROC PFN_CloseHandle = *VECTOR_AT(pKernel32->procedures, FARPROC, CLOSE_HANDLE);
-		PFN_CloseHandle(hToken);
+		PFN_CloseHandle close_handle = *VECTOR_AT(pKernel32->procedures, PFN_CloseHandle, CLOSE_HANDLE);
+		close_handle(hToken);
 	}
 }
 static void collect_process_info(ProcedureList* pKernel32, ProcedureList* pAdvApi32, HANDLE hLog)
@@ -449,8 +456,8 @@ static void collect_process_info(ProcedureList* pKernel32, ProcedureList* pAdvAp
 		
 		WSTRING_DESTROY(processName);
 
-		FARPROC PFN_CloseHandle = *VECTOR_AT(pKernel32->procedures, FARPROC, CLOSE_HANDLE);
-		PFN_CloseHandle(hProcess);
+		PFN_CloseHandle close_handle = *VECTOR_AT(pKernel32->procedures, PFN_CloseHandle, CLOSE_HANDLE);
+		close_handle(hProcess);
 	}
 
 	VECTOR_DESTROY(pids);
@@ -467,8 +474,8 @@ void execute_t1057()
 
 	collect_process_info(&kernel32, &advapi, hLog);
 
-	FARPROC PFN_CloseHandle = *VECTOR_AT(kernel32.procedures, FARPROC, CLOSE_HANDLE);
-	PFN_CloseHandle(hLog);
+	PFN_CloseHandle close_handle = *VECTOR_AT(kernel32.procedures, PFN_CloseHandle, CLOSE_HANDLE);
+	close_handle(hLog);
 
 	procedure_list_destroy(&advapi);
 	procedure_list_destroy(&kernel32);

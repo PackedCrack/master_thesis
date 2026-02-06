@@ -1,6 +1,7 @@
 #include "T1082.h"
 
 #include "../misc/common.h"
+#include "../misc/function_pointers.h"
 #include "../misc/str.h"
 #include "../misc/vector.h"
 #include "../runtime_linking.h"
@@ -305,32 +306,32 @@ static const char* advapiProcedures[1] = { "RegGetValueW" };
 //
 static DWORD get_registry_dword_value(LPWSTR pValue, ProcedureList* pAdvapi)
 {
-	FARPROC PFN_RegGetValueW = *VECTOR_AT(pAdvapi->procedures, FARPROC, REG_GET_VALUE_W);
+	PFN_RegGetValueW reg_get_value_w = *VECTOR_AT(pAdvapi->procedures, PFN_RegGetValueW, REG_GET_VALUE_W);
 
 	DWORD data = 0;
 	DWORD cbData = sizeof(DWORD);
-	LSTATUS status = PFN_RegGetValueW(HKEY_LOCAL_MACHINE,
-								  L"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion",
-								  pValue,
-								  RRF_RT_REG_DWORD,
-								  NULL,
-								  &data,
-								  &cbData);
+	LSTATUS status = reg_get_value_w(HKEY_LOCAL_MACHINE,
+								     L"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion",
+								     pValue,
+								     RRF_RT_REG_DWORD,
+								     NULL,
+								     &data,
+								     &cbData);
 	assert(status == ERROR_SUCCESS);
 
 	return data;
 }
 static void get_registry_str_value(LPWSTR pValue, LPWSTR pOutData, DWORD outBufferSize, ProcedureList* pAdvapi)
 {
-	FARPROC PFN_RegGetValueW = *VECTOR_AT(pAdvapi->procedures, FARPROC, REG_GET_VALUE_W);
+	PFN_RegGetValueW reg_get_value_w = *VECTOR_AT(pAdvapi->procedures, PFN_RegGetValueW, REG_GET_VALUE_W);
 
-	LSTATUS status = PFN_RegGetValueW(HKEY_LOCAL_MACHINE,
-								  L"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion",
-								  pValue,
-								  RRF_RT_REG_SZ,
-								  NULL,
-								  pOutData,
-								  &outBufferSize);
+	LSTATUS status = reg_get_value_w(HKEY_LOCAL_MACHINE,
+								     L"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion",
+								     pValue,
+								     RRF_RT_REG_SZ,
+								     NULL,
+								     pOutData,
+								     &outBufferSize);
 	assert(status == ERROR_SUCCESS);
 }
 static void collect_os_info(HANDLE hLog, ProcedureList* pAdvapi)
@@ -364,12 +365,12 @@ static size_t get_hostname(COMPUTER_NAME_FORMAT format, LPWSTR pOut, size_t outS
 	assert(outSize > 256);
 	assert(pKernel32 != NULL);
 
-	FARPROC PFN_GetComputerNameExW = *VECTOR_AT(pKernel32->procedures, FARPROC, GET_COMPUTER_NAME_EX_W);
+	PFN_GetComputerNameExW get_computer_name_ex_w = *VECTOR_AT(pKernel32->procedures, PFN_GetComputerNameExW, GET_COMPUTER_NAME_EX_W);
 
 	DWORD size = outSize / sizeof(WCHAR);
-	BOOL success = PFN_GetComputerNameExW(format,
-									  pOut,
-									  &size);
+	BOOL success = get_computer_name_ex_w(format,
+									      pOut,
+									      &size);
 
 	if (!success)
 	{
@@ -409,8 +410,10 @@ static void collect_hostname_account_info(HANDLE hLog, ProcedureList* pKernel32)
 static void log_cpu_and_memory(HANDLE hLog, ProcedureList* pKernel32)
 {
 	SYSTEM_INFO info = { 0 };
-	FARPROC PFN_GetNativeSystemInfo = *VECTOR_AT(pKernel32->procedures, FARPROC, GET_NATIVE_SYSTEM_INFO);
-	PFN_GetNativeSystemInfo(&info);
+	PFN_GetNativeSystemInfo get_native_system_info = *VECTOR_AT(pKernel32->procedures, 
+																PFN_GetNativeSystemInfo, 
+																GET_NATIVE_SYSTEM_INFO);
+	get_native_system_info(&info);
 
 	if (info.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_AMD64)
 	{
@@ -427,8 +430,10 @@ static void log_cpu_and_memory(HANDLE hLog, ProcedureList* pKernel32)
 
 	MEMORYSTATUSEX memory = { 0 };
 	memory.dwLength = sizeof(MEMORYSTATUSEX);
-	FARPROC PFN_GlobalMemoryStatusEx = *VECTOR_AT(pKernel32->procedures, FARPROC, GLOBAL_MEMORY_STATUS_EX);
-	BOOL success = PFN_GlobalMemoryStatusEx(&memory);
+	PFN_GlobalMemoryStatusEx global_memory_status_ex = *VECTOR_AT(pKernel32->procedures, 
+																  PFN_GlobalMemoryStatusEx, 
+																  GLOBAL_MEMORY_STATUS_EX);
+	BOOL success = global_memory_status_ex(&memory);
 	if (!success)
 	{
 		PRINT_WIN32_ERROR(GlobalMemoryStatusEx);
@@ -486,6 +491,6 @@ void execute_t1082()
 	procedure_list_destroy(&advapi);
 	procedure_list_destroy(&kernel32);
 
-	FARPROC PFN_CloseHandle = *VECTOR_AT(kernel32.procedures, FARPROC, CLOSE_HANDLE);
-	PFN_CloseHandle(hLog);
+	PFN_CloseHandle close_handle = *VECTOR_AT(kernel32.procedures, PFN_CloseHandle, CLOSE_HANDLE);
+	close_handle(hLog);
 }

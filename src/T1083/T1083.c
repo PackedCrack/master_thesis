@@ -1,6 +1,7 @@
 #include "T1083.h"
 
 #include "../misc/common.h"
+#include "../misc/function_pointers.h"
 #include "../misc/wstr.h"
 #include "../runtime_linking.h"
 
@@ -48,8 +49,11 @@ static const char* wintrustProcedures[5] = { "CryptCATAdminAcquireContext2", "Cr
 static DWORD get_hash_size(ProcedureList* pWintrust, HCATADMIN hCatAdmin, HANDLE hFile)
 {
 	DWORD cbHash = 0;
-	FARPROC PFN_CryptCATAdminCalcHashFromFileHandle2 = *VECTOR_AT(pWintrust->procedures, FARPROC, CRYPT_CAT_ADMIN_CALC_HASH_FROM_FILE_HANDLE_2);
-	if (!PFN_CryptCATAdminCalcHashFromFileHandle2(hCatAdmin, hFile, &cbHash, NULL, 0))
+	PFN_CryptCATAdminCalcHashFromFileHandle2 
+		crypt_cat_admin_calc_hash_from_file_handle_2 = *VECTOR_AT(pWintrust->procedures, 
+																 PFN_CryptCATAdminCalcHashFromFileHandle2, 
+																 CRYPT_CAT_ADMIN_CALC_HASH_FROM_FILE_HANDLE_2);
+	if (!crypt_cat_admin_calc_hash_from_file_handle_2(hCatAdmin, hFile, &cbHash, NULL, 0))
 	{
 		PRINT_WIN32_ERROR(CryptCATAdminCalcHashFromFileHandle2);
 		assert(FALSE);
@@ -65,8 +69,11 @@ static Vector get_hash(ProcedureList* pWintrust, HCATADMIN hCatAdmin, HANDLE hFi
 	if (size > 0)
 	{
 		Vector hash = VECTOR_CREATE(BYTE, size);
-		FARPROC PFN_CryptCATAdminCalcHashFromFileHandle2 = *VECTOR_AT(pWintrust->procedures, FARPROC, CRYPT_CAT_ADMIN_CALC_HASH_FROM_FILE_HANDLE_2);
-		if (PFN_CryptCATAdminCalcHashFromFileHandle2(hCatAdmin, hFile, &size, hash.pData, 0))
+		PFN_CryptCATAdminCalcHashFromFileHandle2
+			crypt_cat_admin_calc_hash_from_file_handle_2 = *VECTOR_AT(pWintrust->procedures,
+																	  PFN_CryptCATAdminCalcHashFromFileHandle2,
+																	  CRYPT_CAT_ADMIN_CALC_HASH_FROM_FILE_HANDLE_2);
+		if (crypt_cat_admin_calc_hash_from_file_handle_2(hCatAdmin, hFile, &size, hash.pData, 0))
 		{
 			return hash;
 		}
@@ -84,8 +91,8 @@ static BOOL has_signature_in_catalog(ProcedureList* pKernel32, ProcedureList* pW
 {
 	BOOL success = FALSE;
 
-	FARPROC PFN_CreateFileW = *VECTOR_AT(pKernel32->procedures, FARPROC, CREATE_FILE_W);
-	HANDLE hFile = (HANDLE) PFN_CreateFileW(
+	PFN_CreateFileW create_file_w = *VECTOR_AT(pKernel32->procedures, PFN_CreateFileW, CREATE_FILE_W);
+	HANDLE hFile = (HANDLE) create_file_w(
 		filepath,
 		GENERIC_READ,
 		FILE_SHARE_READ,
@@ -104,8 +111,10 @@ static BOOL has_signature_in_catalog(ProcedureList* pKernel32, ProcedureList* pW
 	{
 		HCATADMIN hCatAdmin = NULL;
 		GUID subSystem = DRIVER_ACTION_VERIFY;	// THis should maybe me NULL? Also - hash algorithm is default now so may produce false positives
-		FARPROC PFN_CryptCATAdminAcquireContext2 = *VECTOR_AT(pWintrust->procedures, FARPROC, CRYPT_CAT_ADMIN_ACQUIRE_CONTEXT_2);
-		if (!PFN_CryptCATAdminAcquireContext2(&hCatAdmin, &subSystem, NULL, NULL, 0))
+		PFN_CryptCATAdminAcquireContext2 crypt_cat_admin_acquire_context_2 = *VECTOR_AT(pWintrust->procedures, 
+																						PFN_CryptCATAdminAcquireContext2, 
+																						CRYPT_CAT_ADMIN_ACQUIRE_CONTEXT_2);
+		if (!crypt_cat_admin_acquire_context_2(&hCatAdmin, &subSystem, NULL, NULL, 0))
 		{ 
 			PRINT_WIN32_ERROR(CryptCATAdminAcquireContext2);
 			assert(FALSE);
@@ -115,13 +124,23 @@ static BOOL has_signature_in_catalog(ProcedureList* pKernel32, ProcedureList* pW
 			Vector hash = get_hash(pWintrust, hCatAdmin, hFile);
 			if (hash.pData != NULL)
 			{
-				FARPROC PFN_CryptCATAdminEnumCatalogFromHash = *VECTOR_AT(pWintrust->procedures, FARPROC, CRYPT_CAT_ADMIN_ENUM_CATALOG_FROM_HASH);
-				HCATINFO hCatInfo = (HCATINFO) PFN_CryptCATAdminEnumCatalogFromHash(hCatAdmin, hash.pData, (DWORD) VECTOR_SIZE(hash), 0, NULL);
+				PFN_CryptCATAdminEnumCatalogFromHash 
+					crypt_cat_admin_enum_catalog_from_hash = *VECTOR_AT(pWintrust->procedures,
+																		PFN_CryptCATAdminEnumCatalogFromHash, 
+																		CRYPT_CAT_ADMIN_ENUM_CATALOG_FROM_HASH);
+				HCATINFO hCatInfo = (HCATINFO) crypt_cat_admin_enum_catalog_from_hash(hCatAdmin, 
+																					  hash.pData, 
+																					  (DWORD) VECTOR_SIZE(hash), 
+																					  0, 
+																					  NULL);
 				success = hCatInfo != NULL;
 				if (success)
 				{
-					FARPROC PFN_CryptCATAdminReleaseCatalogContext = *VECTOR_AT(pWintrust->procedures, FARPROC, CRYPT_CAT_ADMIN_RELEASE_CATALOG_CONTEXT);
-					if (!PFN_CryptCATAdminReleaseCatalogContext(hCatAdmin, hCatInfo, 0))
+					PFN_CryptCATAdminReleaseCatalogContext 
+						crypt_cat_admin_release_catalog_context = *VECTOR_AT(pWintrust->procedures, 
+																			 PFN_CryptCATAdminReleaseCatalogContext, 
+																			 CRYPT_CAT_ADMIN_RELEASE_CATALOG_CONTEXT);
+					if (!crypt_cat_admin_release_catalog_context(hCatAdmin, hCatInfo, 0))
 					{
 						PRINT_WIN32_ERROR(CryptCATAdminReleaseCatalogContext);
 						assert(FALSE);
@@ -131,24 +150,26 @@ static BOOL has_signature_in_catalog(ProcedureList* pKernel32, ProcedureList* pW
 				VECTOR_DESTROY(hash);
 			}
 
-			FARPROC PFN_CryptCATAdminReleaseContext = *VECTOR_AT(pWintrust->procedures, FARPROC, CRYPT_CAT_ADMIN_RELEASE_CONTEXT);
-			if (!PFN_CryptCATAdminReleaseContext(hCatAdmin, 0))
+			PFN_CryptCATAdminReleaseContext crypt_cat_admin_release_context = *VECTOR_AT(pWintrust->procedures, 
+																					     PFN_CryptCATAdminReleaseContext, 
+																					     CRYPT_CAT_ADMIN_RELEASE_CONTEXT);
+			if (!crypt_cat_admin_release_context(hCatAdmin, 0))
 			{
 				PRINT_WIN32_ERROR(CryptCATAdminReleaseContext);
 				assert(FALSE);
 			}
 		}
 		
-		FARPROC PFN_CloseHandle = *VECTOR_AT(pKernel32->procedures, FARPROC, CLOSE_HANDLE);
-		PFN_CloseHandle(hFile);
+		PFN_CloseHandle close_handle = *VECTOR_AT(pKernel32->procedures, PFN_CloseHandle, CLOSE_HANDLE);
+		close_handle(hFile);
 	}
 
 	return success;
 }
 static BOOL has_embedded_signature(ProcedureList* pKernel32, ProcedureList* pImagehlp, LPCWSTR filepath)
 {
-	FARPROC PFN_CreateFileW = *VECTOR_AT(pKernel32->procedures, FARPROC, CREATE_FILE_W);
-	HANDLE hFile = (HANDLE) PFN_CreateFileW(
+	PFN_CreateFileW create_file_w = *VECTOR_AT(pKernel32->procedures, PFN_CreateFileW, CREATE_FILE_W);
+	HANDLE hFile = (HANDLE) create_file_w(
 		filepath,
 		GENERIC_READ,
 		FILE_SHARE_READ,
@@ -161,15 +182,17 @@ static BOOL has_embedded_signature(ProcedureList* pKernel32, ProcedureList* pIma
 	if (hFile != INVALID_HANDLE_VALUE)
 	{
 		DWORD count = 0;
-		FARPROC PFN_ImageEnumerateCertificates = *VECTOR_AT(pImagehlp->procedures, FARPROC, IMAGE_ENUMERATE_CERTIFICATES);
-		if (!PFN_ImageEnumerateCertificates(hFile, CERT_SECTION_TYPE_ANY, &count, NULL, 0))
+		PFN_ImageEnumerateCertificates image_enumerate_certificates = *VECTOR_AT(pImagehlp->procedures,
+																				 PFN_ImageEnumerateCertificates, 
+																				 IMAGE_ENUMERATE_CERTIFICATES);
+		if (!image_enumerate_certificates(hFile, CERT_SECTION_TYPE_ANY, &count, NULL, 0))
 		{
 			PRINT_WIN32_ERROR(ImageEnumerateCertificates);
 			assert(FALSE);
 		}
 		
-		FARPROC PFN_CloseHandle = *VECTOR_AT(pKernel32->procedures, FARPROC, CLOSE_HANDLE);
-		PFN_CloseHandle(hFile);
+		PFN_CloseHandle close_handle = *VECTOR_AT(pKernel32->procedures, PFN_CloseHandle, CLOSE_HANDLE);
+		close_handle(hFile);
 		return count > 0;
 	}
 	else
@@ -223,11 +246,11 @@ static BOOL has_matching_extension(const WIN32_FIND_DATAW* pData, LPCWSTR extens
 }
 static BOOL find_next_file(ProcedureList* pKernel32, HANDLE hFind, WIN32_FIND_DATAW* pData)
 {
-	FARPROC PFN_FindNextFileW = *VECTOR_AT(pKernel32->procedures, FARPROC, FIND_NEXT_FILE_W);
-	if (!PFN_FindNextFileW(hFind, pData))
+	PFN_FindNextFileW find_next_file_w = *VECTOR_AT(pKernel32->procedures, PFN_FindNextFileW, FIND_NEXT_FILE_W);
+	if (!find_next_file_w(hFind, pData))
 	{
-		FARPROC PFN_GetLastError = *VECTOR_AT(pKernel32->procedures, FARPROC, GET_LAST_ERROR);
-		DWORD err = PFN_GetLastError();
+		PFN_GetLastError get_last_error = *VECTOR_AT(pKernel32->procedures, PFN_GetLastError, GET_LAST_ERROR);
+		DWORD err = get_last_error();
 		if (err != ERROR_NO_MORE_FILES)
 		{
 			printf("FindNextFileW failed with error: 0x%X", err);
@@ -285,12 +308,13 @@ static void do_search(ProcedureList* pKernel32,
 static HANDLE start_search(ProcedureList* pKernel32, WideString* pDirectory, WIN32_FIND_DATAW* pOutData)
 {
 	WideString pattern = WSTRING_CONCAT(*pDirectory, L"*");
-	FARPROC PFN_FindFirstFileW = *VECTOR_AT(pKernel32->procedures, FARPROC, FINE_FIRST_FILE_W);
-	HANDLE hFind = (HANDLE) PFN_FindFirstFileW(WSTRING_C_STR(pattern), pOutData);
+
+	PFN_FindFirstFileW find_first_file_w = *VECTOR_AT(pKernel32->procedures, PFN_FindFirstFileW, FINE_FIRST_FILE_W);
+	HANDLE hFind = find_first_file_w(WSTRING_C_STR(pattern), pOutData);
 	if (hFind == INVALID_HANDLE_VALUE)
 	{
-		FARPROC PFN_GetLastError = *VECTOR_AT(pKernel32->procedures, FARPROC, GET_LAST_ERROR);
-		DWORD err = PFN_GetLastError();
+		PFN_GetLastError get_last_error = *VECTOR_AT(pKernel32->procedures, PFN_GetLastError, GET_LAST_ERROR);
+		DWORD err = get_last_error();
 		if (err == ERROR_ACCESS_DENIED)
 		{
 			printf("Access denied for directory: %ls. Skipping..", WSTRING_C_STR(*pDirectory));
@@ -337,8 +361,8 @@ static HANDLE get_first_hard_drive_volume(ProcedureList* pKernel32, LPWSTR outVo
 {
 	assert(outSize == MAX_PATH);
 
-	FARPROC PFN_FindFirstVolumeW = *VECTOR_AT(pKernel32->procedures, FARPROC, FIND_FIRST_VOLUME_W);
-	HANDLE hVolume = (HANDLE) PFN_FindFirstVolumeW(outVolume, outSize);
+	PFN_FindFirstVolumeW find_first_volume_w = *VECTOR_AT(pKernel32->procedures, PFN_FindFirstVolumeW, FIND_FIRST_VOLUME_W);
+	HANDLE hVolume = find_first_volume_w(outVolume, outSize);
 	if (hVolume == INVALID_HANDLE_VALUE)
 	{
 		PRINT_WIN32_ERROR(FindFirstVolumeW);
@@ -351,8 +375,11 @@ static HANDLE get_first_hard_drive_volume(ProcedureList* pKernel32, LPWSTR outVo
 static DWORD get_required_volume_size(ProcedureList* pKernel32, LPCWSTR volume)
 {
 	DWORD size = 0;
-	FARPROC PFN_GetVolumePathNamesForVolumeNameW = *VECTOR_AT(pKernel32->procedures, FARPROC, GET_VOLUME_PATH_NAMES_FOR_VOLUME_NAME_W);
-	BOOL success = PFN_GetVolumePathNamesForVolumeNameW(volume, NULL, 0, &size);
+	PFN_GetVolumePathNamesForVolumeNameW 
+		get_volume_path_names_for_volume_name_w = *VECTOR_AT(pKernel32->procedures, 
+															 PFN_GetVolumePathNamesForVolumeNameW, 
+															 GET_VOLUME_PATH_NAMES_FOR_VOLUME_NAME_W);
+	BOOL success = get_volume_path_names_for_volume_name_w(volume, NULL, 0, &size);
 	if (!success)
 	{
 		DWORD err = GetLastError();
@@ -377,8 +404,11 @@ static Vector create_volume_names(ProcedureList* pKernel32, LPCWSTR volume)
 	Vector names = VECTOR_CREATE(WCHAR, size);
 	assert(VECTOR_SIZE(names) == size);
 
-	FARPROC PFN_GetVolumePathNamesForVolumeNameW = *VECTOR_AT(pKernel32->procedures, FARPROC, GET_VOLUME_PATH_NAMES_FOR_VOLUME_NAME_W);
-	BOOL success = PFN_GetVolumePathNamesForVolumeNameW(volume, names.pData, VECTOR_SIZE(names), &size);
+	PFN_GetVolumePathNamesForVolumeNameW 
+		get_volume_path_names_for_volume_name_w = *VECTOR_AT(pKernel32->procedures, 
+															 PFN_GetVolumePathNamesForVolumeNameW, 
+															 GET_VOLUME_PATH_NAMES_FOR_VOLUME_NAME_W);
+	BOOL success = get_volume_path_names_for_volume_name_w(volume, names.pData, VECTOR_SIZE(names), &size);
 	if (!success)
 	{
 		PRINT_WIN32_ERROR(GetVolumePathNamesForVolumeNameW);
@@ -390,10 +420,11 @@ static Vector create_volume_names(ProcedureList* pKernel32, LPCWSTR volume)
 }
 static BOOL find_next_hard_drive_volume(ProcedureList* pKernel32, HANDLE hVolume, WCHAR* pVolume, DWORD volumeLength)
 {
-	FARPROC PFN_FindNextVolumeW = *VECTOR_AT(pKernel32->procedures, FARPROC, FIND_NEXT_VOLUME_W);
-	if (!PFN_FindNextVolumeW(hVolume, pVolume, volumeLength))
+	PFN_FindNextVolumeW find_next_volume_w = *VECTOR_AT(pKernel32->procedures, PFN_FindNextVolumeW, FIND_NEXT_VOLUME_W);
+	if (!find_next_volume_w(hVolume, pVolume, volumeLength))
 	{
-		DWORD err = GetLastError();
+		PFN_GetLastError get_last_error = *VECTOR_AT(pKernel32->procedures, PFN_GetLastError, FIND_NEXT_VOLUME_W);
+		DWORD err = get_last_error();
 		if (err != ERROR_NO_MORE_FILES)
 		{
 			printf("FindNextVolumeW failed with: 0x%X", err);
@@ -447,8 +478,8 @@ static void get_mount_points(ProcedureList* pKernel32, LPWSTR pOutMountPoints, s
 		}
 	}
 
-	FARPROC PFN_FindVolumeClose = *VECTOR_AT(pKernel32->procedures, FARPROC, FIND_VOLUME_CLOSE);
-	if (!PFN_FindVolumeClose(hVolume))
+	PFN_FindVolumeClose find_volume_close = *VECTOR_AT(pKernel32->procedures, PFN_FindVolumeClose, FIND_VOLUME_CLOSE);
+	if (!find_volume_close(hVolume))
 	{
 		PRINT_WIN32_ERROR(FindVolumeClose);
 		assert(FALSE);
@@ -479,8 +510,8 @@ void execute_t1083()
 	}
 
 	// Close Log
-	FARPROC PFN_CloseHandle = *VECTOR_AT(kernel32.procedures, FARPROC, CLOSE_HANDLE);
-	PFN_CloseHandle(hLog);
+	PFN_CloseHandle close_handle = *VECTOR_AT(kernel32.procedures, PFN_CloseHandle, CLOSE_HANDLE);
+	close_handle(hLog);
 	// Destroy Procedure List
 	procedure_list_destroy(&wintrust);
 	procedure_list_destroy(&imagehlp);
