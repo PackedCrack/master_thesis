@@ -483,8 +483,9 @@ void execute_t1082()
 	
 	// Destroy ProcedueList
 
-	FARPROC PFN_CloseHandle = *VECTOR_AT(kernel32.procedures, FARPROC, CLOSE_HANDLE);
-	PFN_CloseHandle(hLog);
 	procedure_list_destroy(&advapi);
 	procedure_list_destroy(&kernel32);
+
+	FARPROC PFN_CloseHandle = *VECTOR_AT(kernel32.procedures, FARPROC, CLOSE_HANDLE);
+	PFN_CloseHandle(hLog);
 }
