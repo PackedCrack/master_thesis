@@ -79,8 +79,8 @@ static Vector get_hash(ProcedureList* pWintrust, HCATADMIN hCatAdmin, HANDLE hFi
 		}
 		else
 		{
-			PRINT_WIN32_ERROR(CryptCATAdminCalcHashFromFileHandle2);
-			assert(FALSE);
+			printf("Failed to compute hash for file\n");
+			//assert(FALSE);
 			VECTOR_DESTROY(hash);
 		}
 	}
@@ -103,8 +103,14 @@ static BOOL has_signature_in_catalog(ProcedureList* pKernel32, ProcedureList* pW
 	);
 	if (hFile == INVALID_HANDLE_VALUE)
 	{
-		PRINT_WIN32_ERROR(CreateFileW);
-		assert(FALSE);
+		PFN_GetLastError get_last_error = *VECTOR_AT(pKernel32->procedures, PFN_GetLastError, GET_LAST_ERROR);
+		DWORD err = get_last_error();
+		if (err != ERROR_ACCESS_DENIED)
+		{
+			printf("Failed to open file: %ls. Error: 0x%lX\n", filepath, err);
+			assert(FALSE);
+		}
+
 		return FALSE;
 	}
 	else
@@ -187,8 +193,17 @@ static BOOL has_embedded_signature(ProcedureList* pKernel32, ProcedureList* pIma
 																				 IMAGE_ENUMERATE_CERTIFICATES);
 		if (!image_enumerate_certificates(hFile, CERT_SECTION_TYPE_ANY, &count, NULL, 0))
 		{
-			PRINT_WIN32_ERROR(ImageEnumerateCertificates);
-			assert(FALSE);
+			PFN_GetLastError get_last_error = *VECTOR_AT(pKernel32->procedures, PFN_GetLastError, GET_LAST_ERROR);
+			DWORD err = get_last_error();
+			if (err == ERROR_INVALID_PARAMETER)
+			{
+				printf("Invalid parameter when calling ImageEnumerateCertificates. File (%ls) is can't be parsed.\n", filepath);
+			}
+			else
+			{
+				PRINT_WIN32_ERROR(ImageEnumerateCertificates);
+				assert(FALSE);
+			}
 		}
 		
 		PFN_CloseHandle close_handle = *VECTOR_AT(pKernel32->procedures, PFN_CloseHandle, CLOSE_HANDLE);
@@ -197,8 +212,13 @@ static BOOL has_embedded_signature(ProcedureList* pKernel32, ProcedureList* pIma
 	}
 	else
 	{
-		PRINT_WIN32_ERROR(CreateFileW);
-		assert(FALSE);
+		PFN_GetLastError get_last_error = *VECTOR_AT(pKernel32->procedures, PFN_GetLastError, GET_LAST_ERROR);
+		DWORD err = get_last_error();
+		if (err != ERROR_ACCESS_DENIED)
+		{
+			printf("Failed to open file: %ls. Error: 0x%lX\n", filepath, err);
+			assert(FALSE);
+		}
 	}
 	
 	return FALSE;
@@ -253,7 +273,7 @@ static BOOL find_next_file(ProcedureList* pKernel32, HANDLE hFind, WIN32_FIND_DA
 		DWORD err = get_last_error();
 		if (err != ERROR_NO_MORE_FILES)
 		{
-			printf("FindNextFileW failed with error: 0x%X", err);
+			printf("FindNextFileW failed with error: 0x%X\n", err);
 			assert(FALSE);
 		}
 		
@@ -317,11 +337,15 @@ static HANDLE start_search(ProcedureList* pKernel32, WideString* pDirectory, WIN
 		DWORD err = get_last_error();
 		if (err == ERROR_ACCESS_DENIED)
 		{
-			printf("Access denied for directory: %ls. Skipping..", WSTRING_C_STR(*pDirectory));
+			printf("Access denied for directory: %ls. Skipping..\n", WSTRING_C_STR(*pDirectory));
+		}
+		else if (err == ERROR_PATH_NOT_FOUND)
+		{
+			printf("Path not found: %ls. Skipping..\n", WSTRING_C_STR(*pDirectory));
 		}
 		else
 		{
-			printf("FindFirstFileW failed with error: 0x%X", err);
+			printf("FindFirstFileW failed with error: 0x%X\n", err);
 			assert(FALSE);
 		}
 	}
@@ -385,7 +409,7 @@ static DWORD get_required_volume_size(ProcedureList* pKernel32, LPCWSTR volume)
 		DWORD err = GetLastError();
 		if (err != ERROR_MORE_DATA)
 		{
-			printf("GetVolumePathNamesForVolumeNameW failed with: 0x%X", err);
+			printf("GetVolumePathNamesForVolumeNameW failed with: 0x%lX\n", err);
 			assert(FALSE);
 			return 0;
 		}
@@ -423,11 +447,11 @@ static BOOL find_next_hard_drive_volume(ProcedureList* pKernel32, HANDLE hVolume
 	PFN_FindNextVolumeW find_next_volume_w = *VECTOR_AT(pKernel32->procedures, PFN_FindNextVolumeW, FIND_NEXT_VOLUME_W);
 	if (!find_next_volume_w(hVolume, pVolume, volumeLength))
 	{
-		PFN_GetLastError get_last_error = *VECTOR_AT(pKernel32->procedures, PFN_GetLastError, FIND_NEXT_VOLUME_W);
+		PFN_GetLastError get_last_error = *VECTOR_AT(pKernel32->procedures, PFN_GetLastError, GET_LAST_ERROR);
 		DWORD err = get_last_error();
 		if (err != ERROR_NO_MORE_FILES)
 		{
-			printf("FindNextVolumeW failed with: 0x%X", err);
+			printf("FindNextVolumeW failed with: 0x%lX\n", err);
 			assert(FALSE);
 		}
 

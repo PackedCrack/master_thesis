@@ -18,8 +18,13 @@
 #define GET_FILE_ATTRIBUTES_W 2
 #define DELETE_FILE_A 3
 #define GET_LAST_ERROR 4
-static const char* kernel32Procedures[5] = { "CloseHandle", "RemoveDirectoryW", "GetFileAttributesW",
-												"DeleteFileA", "GetLastError" };
+#define FIND_FIRST_FILE_W 5
+#define FIND_NEXT_FILE_W 6
+#define FIND_CLOSE 7
+#define DELETE_FILE_W 8
+static const char* kernel32Procedures[9] = { "CloseHandle", "RemoveDirectoryW", "GetFileAttributesW",
+												"DeleteFileA", "GetLastError", "FindFirstFileW",
+												"FindNextFileW", "FindClose", "DeleteFileW"};
 // Shlwapi.dll
 #define PATH_IS_DIRECTORY_W 0
 #define PATH_FILE_EXISTS_A 1
@@ -40,11 +45,54 @@ static BOOL exists(ProcedureList* pShlwapi, WideString* pLogDir)
 	PFN_PathIsDirectoryW path_is_directory_w = *VECTOR_AT(pShlwapi->procedures, PFN_PathIsDirectoryW, PATH_IS_DIRECTORY_W);
 	return path_is_directory_w(WSTRING_C_STR(*pLogDir));
 }
+static void delete_files_in_directory(ProcedureList* pKernel32, LPCWSTR dir)
+{
+	WCHAR pattern[MAX_PATH];
+	swprintf(pattern, MAX_PATH, L"%s\\*", dir);
+
+	WIN32_FIND_DATAW fd = { 0 };
+	PFN_FindFirstFileW find_first_file_w = *VECTOR_AT(pKernel32->procedures, PFN_FindFirstFileW, FIND_FIRST_FILE_W);
+	HANDLE hFind = find_first_file_w(pattern, &fd);
+	if (hFind == INVALID_HANDLE_VALUE)
+	{
+		return;
+	}
+
+	PFN_FindNextFileW find_next_file_w = *VECTOR_AT(pKernel32->procedures, PFN_FindNextFileW, FIND_NEXT_FILE_W);
+	do
+	{
+		if (wcscmp(fd.cFileName, L".") == 0 || wcscmp(fd.cFileName, L"..") == 0)
+		{
+			continue;
+		}
+
+		WCHAR full[MAX_PATH];
+		swprintf(full, MAX_PATH, L"%s\\%s", dir, fd.cFileName);
+
+		if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+		{
+			delete_files_in_directory(pKernel32, full);
+
+			PFN_RemoveDirectoryW remove_directory_w = *VECTOR_AT(pKernel32->procedures, PFN_RemoveDirectoryW, REMOVE_DIRECTORY_W);
+			remove_directory_w(full);
+		}
+		else
+		{
+			PFN_DeleteFileW delete_file_w = *VECTOR_AT(pKernel32->procedures, PFN_DeleteFileW, DELETE_FILE_W);
+			delete_file_w(full);
+		}
+	} while (find_next_file_w(hFind, &fd));
+
+	PFN_FindClose find_close = *VECTOR_AT(pKernel32->procedures, PFN_FindClose, FIND_CLOSE);
+	find_close(hFind);
+}
 static void erase_logs(ProcedureList* pKernel32, ProcedureList* pShlwapi)
 {
 	WideString logDirectory = log_directory();
 	if (exists(pShlwapi , &logDirectory))
 	{
+		delete_files_in_directory(pKernel32, WSTRING_C_STR(logDirectory));
+
 		PFN_RemoveDirectoryW remove_directory_w = *VECTOR_AT(pKernel32->procedures, PFN_RemoveDirectoryW, REMOVE_DIRECTORY_W);
 		if (!remove_directory_w(WSTRING_C_STR(logDirectory)))
 		{

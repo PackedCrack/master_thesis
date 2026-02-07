@@ -488,9 +488,9 @@ void execute_t1082()
 	
 	// Destroy ProcedueList
 
-	procedure_list_destroy(&advapi);
-	procedure_list_destroy(&kernel32);
-
 	PFN_CloseHandle close_handle = *VECTOR_AT(kernel32.procedures, PFN_CloseHandle, CLOSE_HANDLE);
 	close_handle(hLog);
+
+	procedure_list_destroy(&advapi);
+	procedure_list_destroy(&kernel32);
 }

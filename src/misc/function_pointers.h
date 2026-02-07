@@ -26,6 +26,7 @@ typedef UINT(__stdcall* PFN_WinExec)(LPCSTR, UINT);
 typedef BOOL(__stdcall* PFN_RemoveDirectoryW)(LPCWSTR);
 typedef DWORD(__stdcall* PFN_GetFileAttributesW)(LPCWSTR);
 typedef BOOL(__stdcall* PFN_DeleteFileA)(LPCSTR);
+typedef BOOL(__stdcall* PFN_DeleteFileW)(LPCWSTR);
 typedef BOOL(__stdcall* PFN_GetComputerNameExW)(COMPUTER_NAME_FORMAT, LPWSTR, LPDWORD);
 typedef void(__stdcall* PFN_GetNativeSystemInfo)(LPSYSTEM_INFO);
 typedef BOOL(__stdcall* PFN_GlobalMemoryStatusEx)(LPMEMORYSTATUSEX);
