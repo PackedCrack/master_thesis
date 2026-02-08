@@ -12,6 +12,7 @@ SET(SOURCES
     main.c
 	runtime_linking.c
 	runtime_linking.h
+	penter.asm
 )
 
 target_sources(${EXECUTABLE} PRIVATE ${SOURCES})
