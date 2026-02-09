@@ -161,86 +161,18 @@ def compile_all_programs(srcDirectory: Path, buildDirectory: Path, binaryPath: P
 
 def main():
     srcDirectory = Path(__file__).resolve().parent
-    buildDirectory = srcDirectory / "build-python"
-    outputDirectory = srcDirectory / "output"
+    buildDirectory = srcDirectory / "build-python-baseline"
+    outputDirectory = srcDirectory / "output-baseline"
     binaryPath = buildDirectory / "bin" / "mal_techniques.exe"
     
-    make_log_file(srcDirectory / "compile.log")     # Create a new log file for this run
-    delete_directory(buildDirectory)                # Erase any previous build directory if it exsists
-    delete_directory(outputDirectory)               # Erase all output from previous executions of this script
+    make_log_file(srcDirectory / "compile-baseline.log")        # Create a new log file for this run
+    delete_directory(buildDirectory)                            # Erase any previous build directory if it exsists
+    delete_directory(outputDirectory)                           # Erase all output from previous executions of this script
 
 
-    #flags = ["/homeparams", "/Qspectre-load", "/Gs0", "/favor:INTEL64", 
-    #        "/Gh", "/QIntel-jcc-erratum", "/guard:cf", "/GL"]
-
-    flags = [['/guard:cf'],
-            ['/homeparams', '/GL'],
-            ['/Qspectre-load', '/GL'],
-            ['/homeparams', '/Qspectre-load', '/guard:cf'],
-            ['/Gs0', '/GL'],
-            ['/homeparams', '/Gs0', '/guard:cf'],
-            ['/Qspectre-load', '/Gs0', '/guard:cf'],
-            ['/homeparams', '/Qspectre-load', '/Gs0', '/GL'],
-            ['/favor:INTEL64', '/GL'],
-            ['/homeparams', '/favor:INTEL64', '/guard:cf'],
-            ['/Qspectre-load', '/favor:INTEL64', '/guard:cf'],
-            ['/homeparams', '/Qspectre-load', '/favor:INTEL64', '/GL'],
-            ['/Gs0', '/favor:INTEL64', '/guard:cf'],
-            ['/homeparams', '/Gs0', '/favor:INTEL64', '/GL'],
-            ['/Qspectre-load', '/Gs0', '/favor:INTEL64', '/GL'],
-            ['/homeparams', '/Qspectre-load', '/Gs0', '/favor:INTEL64', '/guard:cf'],
-            ['/Gh', '/GL'],
-            ['/homeparams', '/Gh', '/guard:cf'],
-            ['/Qspectre-load', '/Gh', '/guard:cf'],
-            ['/homeparams', '/Qspectre-load', '/Gh', '/GL'],
-            ['/Gs0', '/Gh', '/guard:cf'],
-            ['/homeparams', '/Gs0', '/Gh', '/GL'],
-            ['/Qspectre-load', '/Gs0', '/Gh', '/GL'],
-            ['/homeparams', '/Qspectre-load', '/Gs0', '/Gh', '/guard:cf'],
-            ['/favor:INTEL64', '/Gh', '/guard:cf'],
-            ['/homeparams', '/favor:INTEL64', '/Gh', '/GL'],
-            ['/Qspectre-load', '/favor:INTEL64', '/Gh', '/GL'],
-            ['/homeparams', '/Qspectre-load', '/favor:INTEL64', '/Gh', '/guard:cf'],
-            ['/Gs0', '/favor:INTEL64', '/Gh', '/GL'],
-            ['/homeparams', '/Gs0', '/favor:INTEL64', '/Gh', '/guard:cf'],
-            ['/Qspectre-load', '/Gs0', '/favor:INTEL64', '/Gh', '/guard:cf'],
-            ['/homeparams', '/Qspectre-load', '/Gs0', '/favor:INTEL64', '/Gh', '/GL'],
-            ['/QIntel-jcc-erratum'],
-            ['/homeparams', '/QIntel-jcc-erratum', '/guard:cf', '/GL'],
-            ['/Qspectre-load', '/QIntel-jcc-erratum', '/guard:cf', '/GL'],
-            ['/homeparams', '/Qspectre-load', '/QIntel-jcc-erratum'],
-            ['/Gs0', '/QIntel-jcc-erratum', '/guard:cf', '/GL'],
-            ['/homeparams', '/Gs0', '/QIntel-jcc-erratum'],
-            ['/Qspectre-load', '/Gs0', '/QIntel-jcc-erratum'],
-            ['/homeparams', '/Qspectre-load', '/Gs0', '/QIntel-jcc-erratum', '/guard:cf', '/GL'],
-            ['/favor:INTEL64', '/QIntel-jcc-erratum', '/guard:cf', '/GL'],
-            ['/homeparams', '/favor:INTEL64', '/QIntel-jcc-erratum'],
-            ['/Qspectre-load', '/favor:INTEL64', '/QIntel-jcc-erratum'],
-            ['/homeparams', '/Qspectre-load', '/favor:INTEL64', '/QIntel-jcc-erratum', '/guard:cf', '/GL'],
-            ['/Gs0', '/favor:INTEL64', '/QIntel-jcc-erratum'],
-            ['/homeparams', '/Gs0', '/favor:INTEL64', '/QIntel-jcc-erratum', '/guard:cf', '/GL'],
-            ['/Qspectre-load', '/Gs0', '/favor:INTEL64', '/QIntel-jcc-erratum', '/guard:cf', '/GL'],
-            ['/homeparams', '/Qspectre-load', '/Gs0', '/favor:INTEL64', '/QIntel-jcc-erratum'],
-            ['/Gh', '/QIntel-jcc-erratum', '/guard:cf', '/GL'],
-            ['/homeparams', '/Gh', '/QIntel-jcc-erratum'],
-            ['/Qspectre-load', '/Gh', '/QIntel-jcc-erratum'],
-            ['/homeparams', '/Qspectre-load', '/Gh', '/QIntel-jcc-erratum', '/guard:cf', '/GL'],
-            ['/Gs0', '/Gh', '/QIntel-jcc-erratum'],
-            ['/homeparams', '/Gs0', '/Gh', '/QIntel-jcc-erratum', '/guard:cf', '/GL'],
-            ['/Qspectre-load', '/Gs0', '/Gh', '/QIntel-jcc-erratum', '/guard:cf', '/GL'],
-            ['/homeparams', '/Qspectre-load', '/Gs0', '/Gh', '/QIntel-jcc-erratum'],
-            ['/favor:INTEL64', '/Gh', '/QIntel-jcc-erratum'],
-            ['/homeparams', '/favor:INTEL64', '/Gh', '/QIntel-jcc-erratum', '/guard:cf', '/GL'],
-            ['/Qspectre-load', '/favor:INTEL64', '/Gh', '/QIntel-jcc-erratum', '/guard:cf', '/GL'],
-            ['/homeparams', '/Qspectre-load', '/favor:INTEL64', '/Gh', '/QIntel-jcc-erratum'],
-            ['/Gs0', '/favor:INTEL64', '/Gh', '/QIntel-jcc-erratum', '/guard:cf', '/GL'],
-            ['/homeparams', '/Gs0', '/favor:INTEL64', '/Gh', '/QIntel-jcc-erratum'],
-            ['/Qspectre-load', '/Gs0', '/favor:INTEL64', '/Gh', '/QIntel-jcc-erratum'],
-            ['/homeparams', '/Qspectre-load', '/Gs0', '/favor:INTEL64', '/Gh', '/QIntel-jcc-erratum', '/guard:cf', '/GL']]
-
-    assert(len(flags) == 64)
+    flags = ["/O2"]
     for f in flags:
-        compile_all_programs(srcDirectory, buildDirectory, binaryPath, outputDirectory, f)
+        compile_all_programs(srcDirectory, buildDirectory, binaryPath, outputDirectory, [ f ])
 
 
 main()
