@@ -6,6 +6,7 @@ import shutil
 
 g_Symbols = False
 g_LogPath: Path
+g_RunIteration = 0
 
 @beartype
 def make_log_file(location: Path):
@@ -92,7 +93,10 @@ def make_cmake_configuration_args(srcDirectory: Path, buildDirectory: Path, prog
 
 @beartype
 def make_flag_directory(flags: list[str]) -> Path:
-    directory = ""
+    global g_RunIteration
+    g_RunIteration += 1
+
+    directory = f"Run_{g_RunIteration}_"
     for f in flags:
         f = f.replace("/", "_")
         f = f.replace(":", "-")
