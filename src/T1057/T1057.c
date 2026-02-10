@@ -1,3 +1,4 @@
+#include "C:\\Program Files\\University of Arizona\\Tigress C Source Code Obfuscator\\Tigress\\tigress.h"
 #include "T1057.h"
 
 #include "../misc/common.h"
@@ -10,7 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define WIN_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <Psapi.h>
 

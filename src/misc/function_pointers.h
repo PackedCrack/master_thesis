@@ -1,6 +1,6 @@
 #pragma once
 
-#define WIN_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <ShlObj.h>
 #include <imagehlp.h>

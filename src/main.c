@@ -1,3 +1,4 @@
+#include "C:\\Program Files\\University of Arizona\\Tigress C Source Code Obfuscator\\Tigress\\tigress.h"
 #include "misc/common.h"
 #include "misc/vector.h"
 #include "misc/str.h"
