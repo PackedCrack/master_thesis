@@ -19,10 +19,10 @@
 #define GET_NATIVE_SYSTEM_INFO 1
 #define GLOBAL_MEMORY_STATUS_EX 2
 #define CLOSE_HANDLE 3
-static const char* kernel32Procedures[4] = { "GetComputerNameExW", "GetNativeSystemInfo", "GlobalMemoryStatusEx", "CloseHandle" };
+static const char* t1082_kernel32Procedures[4] = { "GetComputerNameExW", "GetNativeSystemInfo", "GlobalMemoryStatusEx", "CloseHandle" };
 // advapi32.dll
 #define REG_GET_VALUE_W 0
-static const char* advapiProcedures[1] = { "RegGetValueW" };
+static const char* t1082_advapi32Procedures[1] = { "RegGetValueW" };
 
 //static LPWSTR get_privilege(DWORD priv)
 //{
@@ -472,8 +472,8 @@ void execute_t1082()
 	HANDLE hLog = open_log_file(L"LOG_T1082_");
 
 	// Create ProcedueList
-	ProcedureList advapi = procedure_list_create("advapi32.dll", advapiProcedures, ARRAYSIZE(advapiProcedures));
-	ProcedureList kernel32 = procedure_list_create("kernel32.dll", kernel32Procedures, ARRAYSIZE(kernel32Procedures));
+	ProcedureList advapi = procedure_list_create("advapi32.dll", t1082_advapi32Procedures, ARRAYSIZE(t1082_advapi32Procedures));
+	ProcedureList kernel32 = procedure_list_create("kernel32.dll", t1082_kernel32Procedures, ARRAYSIZE(t1082_kernel32Procedures));
 
 	// OS and build
 	collect_os_info(hLog, &advapi);

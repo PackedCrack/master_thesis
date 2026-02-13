@@ -29,12 +29,12 @@
 #define FIND_CLOSE 7
 #define CREATE_FILE_W 8
 #define FIND_NEXT_FILE_W 9
-static const char* kernel32Procedures[10] = { "CloseHandle", "FindVolumeClose", "FindFirstVolumeW", 
+static const char* t1083_kernel32Procedures[10] = { "CloseHandle", "FindVolumeClose", "FindFirstVolumeW", 
 											"GetVolumePathNamesForVolumeNameW", "FindNextVolumeW", "FindFirstFileW",
 											"GetLastError", "FindClose", "CreateFileW", "FindNextFileW"};
 // imagehlp.dll
 #define IMAGE_ENUMERATE_CERTIFICATES 0
-static const char* imagehlpProcedures[1] = { "ImageEnumerateCertificates" };
+static const char* t1083_imagehlpProcedures[1] = { "ImageEnumerateCertificates" };
 
 // Wintrust.dll
 #define CRYPT_CAT_ADMIN_ACQUIRE_CONTEXT_2 0
@@ -42,7 +42,7 @@ static const char* imagehlpProcedures[1] = { "ImageEnumerateCertificates" };
 #define CRYPT_CAT_ADMIN_ENUM_CATALOG_FROM_HASH 2
 #define CRYPT_CAT_ADMIN_RELEASE_CATALOG_CONTEXT 3
 #define CRYPT_CAT_ADMIN_RELEASE_CONTEXT 4
-static const char* wintrustProcedures[5] = { "CryptCATAdminAcquireContext2", "CryptCATAdminCalcHashFromFileHandle2",
+static const char* t1083_wintrustProcedures[5] = { "CryptCATAdminAcquireContext2", "CryptCATAdminCalcHashFromFileHandle2",
 												"CryptCATAdminEnumCatalogFromHash", "CryptCATAdminReleaseCatalogContext",
 												"CryptCATAdminReleaseContext" };
 
@@ -243,11 +243,11 @@ static Vector create_directories_stack(LPCWSTR mountPoint)
 
 	return directories;
 }
-static BOOL is_directory(const WIN32_FIND_DATAW* pData)
+static BOOL is_directory2(const WIN32_FIND_DATAW* pData)
 {
 	return pData->dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY;
 }
-static BOOL is_sym_link(const WIN32_FIND_DATAW* pData)
+static BOOL is_sym_link2(const WIN32_FIND_DATAW* pData)
 {
 	return pData->dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT;
 }
@@ -295,12 +295,12 @@ static void do_search(ProcedureList* pKernel32,
 {
 	do
 	{
-		if (is_dots(pData->cFileName) || is_sym_link(pData))
+		if (is_dots(pData->cFileName) || is_sym_link2(pData))
 		{
 			continue;
 		}
 
-		if (is_directory(pData))
+		if (is_directory2(pData))
 		{
 			WideString subDirectory = WSTRING_CONCAT(*pCurrentDirectory, pData->cFileName);
 			append_backslash(&subDirectory);
@@ -515,9 +515,9 @@ static void get_mount_points(ProcedureList* pKernel32, LPWSTR pOutMountPoints, s
 void execute_t1083()
 {
 	// Create Procedure List
-	ProcedureList kernel32 = procedure_list_create("kernel32.dll", kernel32Procedures, ARRAYSIZE(kernel32Procedures));
-	ProcedureList imagehlp = procedure_list_create("imagehlp.dll", imagehlpProcedures, ARRAYSIZE(imagehlpProcedures));
-	ProcedureList wintrust = procedure_list_create("Wintrust.dll", wintrustProcedures, ARRAYSIZE(wintrustProcedures));
+	ProcedureList kernel32 = procedure_list_create("kernel32.dll", t1083_kernel32Procedures, ARRAYSIZE(t1083_kernel32Procedures));
+	ProcedureList imagehlp = procedure_list_create("imagehlp.dll", t1083_imagehlpProcedures, ARRAYSIZE(t1083_imagehlpProcedures));
+	ProcedureList wintrust = procedure_list_create("Wintrust.dll", t1083_wintrustProcedures, ARRAYSIZE(t1083_wintrustProcedures));
 
 	
 	WCHAR mountPoints[1024] = { 0 };

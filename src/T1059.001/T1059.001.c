@@ -19,10 +19,10 @@
 #define CLOSE_HANDLE 1
 #define WAIT_FOR_SINGLE_OBJECT 2
 #define WIN_EXEC 3
-static const char* kernel32Procedures[4] = { "CreateProcessW", "CloseHandle", "WaitForSingleObject", "WinExec" };
+static const char* t1059_kernel32Procedures[4] = { "CreateProcessW", "CloseHandle", "WaitForSingleObject", "WinExec" };
 // Shell32.dll
 #define SHELL_EXECUTE_W 0
-static const char* shell32Procedures[1] = { "ShellExecuteW" };
+static const char* t1059_shell32Procedures[1] = { "ShellExecuteW" };
 
 
 static LPCWSTR ps = L"powershell.exe -NoProfile -ExecutionPolicy Bypass echo \"Hello PowerShell!\"";
@@ -75,8 +75,8 @@ static launch_ps_3(ProcedureList* pKernel32)
 //
 void execute_t1059_001()
 {
-	ProcedureList kernel32 = procedure_list_create("kernel32.dll", kernel32Procedures, ARRAYSIZE(kernel32Procedures));
-	ProcedureList shell32 = procedure_list_create("shell32.dll", shell32Procedures, ARRAYSIZE(shell32Procedures));
+	ProcedureList kernel32 = procedure_list_create("kernel32.dll", t1059_kernel32Procedures, ARRAYSIZE(t1059_kernel32Procedures));
+	ProcedureList shell32 = procedure_list_create("shell32.dll", t1059_shell32Procedures, ARRAYSIZE(t1059_shell32Procedures));
 	
 	launch_ps_1(&kernel32);
 	launch_ps_2(&shell32);

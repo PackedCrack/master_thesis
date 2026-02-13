@@ -19,13 +19,13 @@
 #define FIND_NEXT_FILE_W 1
 #define CLOSE_HANDLE 2
 #define FIND_CLOSE 3
-static const char* kernel32Procedures[4] = { "FindFirstFileW", "FindNextFileW", "CloseHandle", "FindClose" };
+static const char* t1005_kernel32Procedures[4] = { "FindFirstFileW", "FindNextFileW", "CloseHandle", "FindClose" };
 // Shell32.dll
 #define SH_GET_KNOWN_FOLDER_PATH 0
-static const char* shell32Procedures[1] = { "SHGetKnownFolderPath" };
+static const char* t1005_shell32Procedures[1] = { "SHGetKnownFolderPath" };
 // Ole32.dll
 #define CO_TASK_MEM_FREE 0
-static const char* ole32Procedures[1] = { "CoTaskMemFree" };
+static const char* t1005_ole32Procedures[1] = { "CoTaskMemFree" };
 
 
 static LPCWSTR s_extensions[] = {
@@ -454,9 +454,9 @@ static void destroy_root_dirs(Vector* pRoots)
 //
 void execute_t1005()
 {
-	ProcedureList kernel32 = procedure_list_create("kernel32.dll", kernel32Procedures, ARRAYSIZE(kernel32Procedures));
-	ProcedureList shell32 = procedure_list_create("shell32.dll", shell32Procedures, ARRAYSIZE(shell32Procedures));
-	ProcedureList ole32 = procedure_list_create("ole32.dll", ole32Procedures, ARRAYSIZE(ole32Procedures));
+	ProcedureList kernel32 = procedure_list_create("kernel32.dll", t1005_kernel32Procedures, ARRAYSIZE(t1005_kernel32Procedures));
+	ProcedureList shell32 = procedure_list_create("shell32.dll", t1005_shell32Procedures, ARRAYSIZE(t1005_shell32Procedures));
+	ProcedureList ole32 = procedure_list_create("ole32.dll", t1005_ole32Procedures, ARRAYSIZE(t1005_ole32Procedures));
 	
 	Vector roots = create_root_dirs(&shell32, &ole32);
 

@@ -21,24 +21,24 @@
 
 // Kernel32.dll
 #define MULTI_BYTE_TO_WIDE_CHAR 0
-static const char* kernel32Procedures[1] = { "MultiByteToWideChar" };
+static const char* t1547_kernel32Procedures[1] = { "MultiByteToWideChar" };
 // advapi32.dll
 #define REG_CREATE_KEY_EX_W 0
 #define REG_SET_VALUE_EX_A 1
 #define REG_CLOSE_KEY 2
-static const char* advapi32Procedures[3] = { "RegCreateKeyExW", "RegSetValueExA", "RegCloseKey" };
+static const char* t1547_advapi32Procedures[3] = { "RegCreateKeyExW", "RegSetValueExA", "RegCloseKey" };
 // Crypt32.dll
 #define CRYPT_BINARY_TO_STRING_A 0
-static const char* crypt32Procedures[1] = { "CryptBinaryToStringA" };
+static const char* t1547_crypt32Procedures[1] = { "CryptBinaryToStringA" };
 // Shell32.dll
 #define SH_GET_KNOWN_FOLDER_PATH 0
-static const char* shell32Procedures[1] = { "SHGetKnownFolderPath" };
+static const char* t1547_shell32Procedures[1] = { "SHGetKnownFolderPath" };
 // Ole32.dll
 #define CO_TASK_MEM_FREE 0
 #define CO_INITIALIZE_EX 1
 #define CO_CREATE_INSTANCE 2
 #define CO_UNINITIALIZE 3
-static const char* ole32Procedures[4] = { "CoTaskMemFree", "CoInitializeEx", "CoCreateInstance", "CoUninitialize" };
+static const char* t1547_ole32Procedures[4] = { "CoTaskMemFree", "CoInitializeEx", "CoCreateInstance", "CoUninitialize" };
 
 
 static HKEY create_key(ProcedureList* pAdvapi32, HKEY key, LPCWSTR subkey)
@@ -292,11 +292,11 @@ static void add_lnk_to_startup_dir(ProcedureList* pKernel32, ProcedureList* pShe
 //
 void execute_t1574_001(char** argv)
 {
-	ProcedureList kernel32 = procedure_list_create("Kernel32.dll", kernel32Procedures, ARRAYSIZE(kernel32Procedures));
-	ProcedureList advapi32 = procedure_list_create("advapi32.dll", advapi32Procedures, ARRAYSIZE(advapi32Procedures));
-	ProcedureList crypt32 = procedure_list_create("Crypt32.dll", crypt32Procedures, ARRAYSIZE(crypt32Procedures));
-	ProcedureList shell32 = procedure_list_create("Shell32.dll", shell32Procedures, ARRAYSIZE(shell32Procedures));
-	ProcedureList ole32 = procedure_list_create("Ole32.dll", ole32Procedures, ARRAYSIZE(ole32Procedures));
+	ProcedureList kernel32 = procedure_list_create("Kernel32.dll", t1547_kernel32Procedures, ARRAYSIZE(t1547_kernel32Procedures));
+	ProcedureList advapi32 = procedure_list_create("advapi32.dll", t1547_advapi32Procedures, ARRAYSIZE(t1547_advapi32Procedures));
+	ProcedureList crypt32 = procedure_list_create("Crypt32.dll", t1547_crypt32Procedures, ARRAYSIZE(t1547_crypt32Procedures));
+	ProcedureList shell32 = procedure_list_create("Shell32.dll", t1547_shell32Procedures, ARRAYSIZE(t1547_shell32Procedures));
+	ProcedureList ole32 = procedure_list_create("Ole32.dll", t1547_ole32Procedures, ARRAYSIZE(t1547_ole32Procedures));
 
 
 	add_run_key(&advapi32, &crypt32, argv);

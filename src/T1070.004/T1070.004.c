@@ -23,13 +23,13 @@
 #define FIND_NEXT_FILE_W 6
 #define FIND_CLOSE 7
 #define DELETE_FILE_W 8
-static const char* kernel32Procedures[9] = { "CloseHandle", "RemoveDirectoryW", "GetFileAttributesW",
+static const char* t1070_kernel32Procedures[9] = { "CloseHandle", "RemoveDirectoryW", "GetFileAttributesW",
 												"DeleteFileA", "GetLastError", "FindFirstFileW",
 												"FindNextFileW", "FindClose", "DeleteFileW"};
 // Shlwapi.dll
 #define PATH_IS_DIRECTORY_W 0
 #define PATH_FILE_EXISTS_A 1
-static const char* shlwapiProcedures[2] = { "PathIsDirectoryW", "PathFileExistsA" };
+static const char* t1070_shlwapiProcedures[2] = { "PathIsDirectoryW", "PathFileExistsA" };
 
 
 static WideString log_directory()
@@ -149,8 +149,8 @@ static void self_delete(ProcedureList* pKernel32, ProcedureList* pShlwapi, char*
 //
 void execute_t1070_004(char** argv)
 {
-	ProcedureList kernel32 = procedure_list_create("kernel32.dll", kernel32Procedures, ARRAYSIZE(kernel32Procedures));
-	ProcedureList shlwapi = procedure_list_create("shlwapi.dll", shlwapiProcedures, ARRAYSIZE(shlwapiProcedures));
+	ProcedureList kernel32 = procedure_list_create("kernel32.dll", t1070_kernel32Procedures, ARRAYSIZE(t1070_kernel32Procedures));
+	ProcedureList shlwapi = procedure_list_create("shlwapi.dll", t1070_shlwapiProcedures, ARRAYSIZE(t1070_shlwapiProcedures));
 
 	erase_logs(&kernel32, &shlwapi);
 	self_delete(&kernel32, &shlwapi, argv);

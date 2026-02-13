@@ -1,9 +1,12 @@
+from cProfile import label
 import subprocess
 from pathlib import Path
 from beartype import beartype
 import shutil
 import os
 import sys
+import re
+import secrets
 
 
 @beartype
@@ -283,8 +286,8 @@ def make_technique_functions(program: list[str]) -> list[str]:
         "has_embedded_signature",
         "append_backslash",
         "create_directories_stack",
-        "is_directory",
-        "is_sym_link",
+        "is_directory2",
+        "is_sym_link2",
         "is_dots",
         "has_matching_extension",
         "find_next_file",
@@ -370,9 +373,15 @@ def make_transformation_split(functions: str) -> list[str]:
     return ["--Transform=Split",
             functions]
 
+@beartype
+def make_transformation_cleanup() -> list[str]:
+    return ["--Transform=CleanUp",
+            "--CleanUpKinds=names,annotations"]
+
 @beartype 
-def make_transformation_pass(tigressLocation: Path, *transformations: list[str]) -> list[str]:
-    ts = [str(tigressLocation), "--FilePrefix=AUTO"]
+def make_transformation_pass(tigressLocation: Path, program: list[str], s: int, *transformations: list[str]) -> list[str]:
+    ts = [str(tigressLocation), "--FilePrefix=AUTO", f"--Seed={s}"]
+    ts.extend(make_tigress_define_args(program))
     for t in transformations:
         ts.extend(t)
 
@@ -380,15 +389,27 @@ def make_transformation_pass(tigressLocation: Path, *transformations: list[str])
 
 @beartype
 def make_transformation_passes(tigressLocation: Path, program: list[str]) -> list[list[str]]:
+    seed = 1000
     functions = make_tigress_functions_arg(program)
-    
+
     passes = []
     passes.append(make_transformation_pass(tigressLocation,
+                                           program,
+                                           seed,
                                            make_transformation_flatten(functions), 
-                                           make_transformation_encode_literals(functions), 
-                                           make_transformation_random_args(functions)))
+                                           make_transformation_encode_literals(functions)))
     passes.append(make_transformation_pass(tigressLocation,
+                                           program,
+                                           seed,
+                                           make_transformation_random_args(functions),
                                            make_transformation_split(functions)))
+    
+
+
+    #passes.append(make_transformation_pass(tigressLocation,
+    #                                       program,
+    #                                       seed,
+    #                                       make_transformation_cleanup()))
 
     return passes
 
@@ -401,7 +422,6 @@ def apply_transformations(vcvars64: Path, tigressLocation: Path, file: Path, out
     passes = make_transformation_passes(tigressLocation, program)
 
     env = vcvars_env(vcvars64)
-    tmp = outFile.with_suffix(".pass1.c")
     srcFile = file
     for i in range(0, len(passes)):
         p = passes[i]
@@ -414,83 +434,170 @@ def apply_transformations(vcvars64: Path, tigressLocation: Path, file: Path, out
         p.append(f"--out={str(out)}")
         srcFile = out
 
-
-        p = subprocess.run(
-            p,
-            cwd = str(outFile.parent),
-            env = env,
-            capture_output = True,
-            text = True,
-            check = False,
-        )
-
-        if p.returncode == 0:
+        process = subprocess.run(p,
+                                 cwd = str(outFile.parent),
+                                 env = env,
+                                 capture_output = True,
+                                 text = True,
+                                 check = False
+                                 )
+        
+        if process.returncode != 0:
+            log(f"Tigress transformations failed for {program}. \nSTDOUT: {process.stdout}\nSTDERR: {process.stderr}")
+        else:
             try:    # Check if tigress produced file exist and is not empty
                 if ((not out.is_file()) or (out.stat().st_size < 1)):
-                    log(f"Tigress transformations failed for {program}. \nSTDOUT: {p.stdout}\nSTDERR: {p.stderr}")
+                    log(f"Tigress transformations failed for {program}. \nSTDOUT: {process.stdout}\nSTDERR: {process.stderr}")
             except FileNotFoundError:
-                log(f"Tigress transformations failed for {program}. \nSTDOUT: {p.stdout}\nSTDERR: {p.stderr}")
+                log(f"Tigress transformations failed for {program}. \nSTDOUT: {process.stdout}\nSTDERR: {process.stderr}")
         
+@beartype
+def extract_redefined_errors(stdout: str) -> list[str]:
+    matches: list[str] = []
+    error = "label redefined"
+    
+    lines = stdout.splitlines()
+    for line in lines:
+        stripped = line.strip()
+        lowered = stripped.lower()
 
-    #passes = [[
-    #    tigressLocation,
-    #    "--FilePrefix=AUTO",
-    #    "--Transform=Flatten",
-    #        functions,
-    #    "--Transform=EncodeLiterals",
-    #        functions,
-    #        "--EncodeLiteralsKinds=integer",
-    #        "--EncodeLiteralsIntegerKinds=split",
-    #    "--Transform=RndArgs",
-    #        functions,
-    #        "--Exclude=main",
-    #        "--RndArgsBogusNo=2",
-    #    "--Transform=Split",
-    #        functions,
-    #    #"--Transform=EncodeArithmetic",
-    #    #    functions,
-    #    str(file),
-    #    f"--out={outFile}",
-    #],
-    #[
-    #    tigressLocation,
-    #    "--FilePrefix=AUTO",
-    #    #"--Transform=RndArgs",
-    #    #    functions,
-    #    #    "--Exclude=main",
-    #    #    "--RndArgsBogusNo=2",
-    #    #"--Transform=Split",
-    #    #    functions,
-    #    str(file),
-    #    f"--out={outFile}",
-    #]]
+        if error in lowered:
+            matches.append(stripped)
 
-    #env = vcvars_env(vcvars64)
-#
-    #tmp = outFile.with_suffix(".pass1.c")
-    #for i in range(0, len(passes) - 1):
-    #    arg = passes[i]
-    #    if i == 0:
-    #        arg[-1] = f"--out={tmp}"
-    #    else:
-    #        arg[-2] = str(tmp)
-    #        arg[-1] = f"--out={outFile}"
-#
-    #    p = subprocess.run(
-    #        arg,
-    #        cwd = str(outFile.parent),
-    #        env = env,
-    #        capture_output = True,
-    #        text = True,
-    #        check = False,
-    #    )
-#
-    #    if p.returncode == 0:
-    #        try:    # Check if tigress produced file exist and is not empty
-    #            if ((not outFile.is_file()) or (outFile.stat().st_size < 1)) and (not (tmp.is_file()) or (tmp.stat().st_size < 1)):
-    #                log(f"Tigress transformations failed for {program}. \nSTDOUT: {p.stdout}\nSTDERR: {p.stderr}")
-    #        except FileNotFoundError:
-    #            log(f"Tigress transformations failed for {program}. \nSTDOUT: {p.stdout}\nSTDERR: {p.stderr}")
+    return matches
+
+@beartype 
+def extract_label_names(errors: list[str]) -> list[str]:
+    _LABEL_RE = re.compile(r"\berror\s+\w+\s*:\s*'([^']+)'\s*:\s*label\s+redefined\b", 
+                           re.IGNORECASE)
+
+    labels: list[str] = []
+    for error in errors:
+        m = _LABEL_RE.search(error)
+        if m:
+            labels.append(m.group(1))
+    return labels
+
+@beartype
+def make_hex_suffix(len: int = 8) -> str:
+    nbytes = (len + 1) // 2
+    return secrets.token_hex(nbytes).upper()[:len]
+
+@beartype
+def get_lines_from_file(file: Path) -> list[str]:
+    data = file.read_bytes()
+    text = data.decode("utf-8", errors = "surrogateescape")
+    lines = text.splitlines(keepends = True)
+    return lines
+
+@beartype
+def make_regex_patterns(targets: list[str]) -> list[dict[str, re.Pattern[str]]]:
+    # Precompile goto regex per label
+    goto: dict[str, re.Pattern[str]] = { lbl: re.compile(rf"\bgoto\s+{re.escape(lbl)}\s*;", re.IGNORECASE)
+                                         for lbl in targets
+                                        }
+    # Also for replacing the label token as a word
+    word: dict[str, re.Pattern[str]] = { lbl: re.compile(rf"\b{re.escape(lbl)}\b") 
+                                         for lbl in targets
+                                        }
+
+    return [goto, word]
+
+@beartype
+def seperate_line_and_eol(line: str) -> list[str]:
+    if line.endswith("\r\n"):
+        return [line[:-2], "\r\n"]
+    elif line.endswith("\n"):
+        return [line[:-1], "\n"]
+    elif line.endswith("\r"):
+        return [line[:-1], "\r"]
+    
+    return [line, ""]
+
+@beartype
+def patch_definition(match: re.Match[str], lines: list[str], lineIndex: int, eol: str) -> str:
+    indent, label, colon, rest = match.groups()
+    newLabel = f"{label}_{make_hex_suffix()}"
+
+    # Replace label token in the definition line (label is at the start per regex)
+    patchedLine = f"{indent}{newLabel}{colon}{rest}"
+    lines[lineIndex] = patchedLine + eol
+
+    return newLabel
+
+@beartype
+def patch_redefined_labels_inplace(file: Path, labels: list[str]) -> int:
+    targets = list(dict.fromkeys(labels))  # de-dup, preserve order
+    targetSet = set(targets)
+
+    lines = get_lines_from_file(file)
+
+    # Track per-label definition counts and last definition line index
+    defCount: dict[str, int] = {lbl: 0 for lbl in targets}
+    lastDefIndex: dict[str, int] = {lbl: -1 for lbl in targets}
+
+    gotoRE, wordRE = make_regex_patterns(targets)
+
+
+    _LABEL_DEF_RE = re.compile(r"^(\s*)(Lab_\d+)(\s*:\s*)(.*)$")
+    patchCount = 0
+    for i, raw in enumerate(lines):
+        line, eol = seperate_line_and_eol(raw)
+        match = _LABEL_DEF_RE.match(line)
+        if not match:
+            continue
+
+        _, label, _, _ = match.groups()
+        if label not in targetSet:
+            continue
+
+
+        defCount[label] += 1
+        # If we found the first definition - do nothing
+        if defCount[label] == 1:
+            lastDefIndex[label] = i
+            continue
+
+        # If we found a second definition - rename it
+        newLabel = patch_definition(match, lines, i, eol)
+        patchCount += 1
+
+        # Rename the nearest preceding goto between previous definition and this definition
+        start = lastDefIndex[label] + 1  # The line following the previous definition
+        for j in range(i - 1, start - 1, -1):
+            jLine, jEol = seperate_line_and_eol(lines[j])
+
+            if gotoRE[label].search(jLine):
+                jLine2 = wordRE[label].sub(newLabel, jLine)
+                if jLine2 != jLine:
+                    lines[j] = jLine2 + jEol
+                break
+
+        # The last definition index can now be updated to current position in case there are more conflicts
+        lastDefIndex[label] = i
+
+    if patchCount > 0:
+        new_text = "".join(lines)
+        new_data = new_text.encode("utf-8", errors = "surrogateescape")
+
+        tmp = file.with_suffix(file.suffix + ".tmp")
+        tmp.write_bytes(new_data)
+        tmp.replace(file)
+
+    return patchCount
+
+@beartype
+def fix_redefine_errors(file: Path, stdout: str) -> bool:
+    redefines = extract_redefined_errors(stdout)
+    if len(redefines) == 0:
+        return False
+    
+    labels = extract_label_names(redefines)
+    fixes = patch_redefined_labels_inplace(file, labels)
+    if fixes == 0:
+        return False
+
+    return True
 
 @beartype
 def compile(vcvars64: Path, file: Path, program: list[str]) -> None:    
@@ -513,7 +620,10 @@ def compile(vcvars64: Path, file: Path, program: list[str]) -> None:
                        capture_output = True,
                        text = True)
     except subprocess.CalledProcessError as err:
-        log(f"Failed to compile {program}. \nSTDOUT: {err.stdout}\nSTDERR: {err.stderr}")
+        if fix_redefine_errors(file, err.stdout):
+            compile(vcvars64, file, program)
+        else:
+            log(f"Failed to compile {program}. \nSTDOUT: {err.stdout}\nSTDERR: {err.stderr}")
 
 def main():
     rootDirectory = Path(__file__).resolve().parent
@@ -531,12 +641,13 @@ def main():
     T1005 = "T1005" # G
 
     programs = [[T1082, T1083, T1057], [T1082, T1083, T1070], [T1082, T1083, T1547], [T1082, T1057, T1005],
-                [T1082, T1057, T1059 ], [T1082, T1070, T1547], [T1082, T1070, T1059 ], [T1082, T1547, T1005],
-                [T1082, T1059, T1005], [T1083, T1057, T1547], [T1083, T1057, T1005], [T1083, T1070, T1059 ],
-                [T1083, T1070, T1005], [T1083, T1547, T1059 ], [T1083, T1059, T1005], [T1057, T1070, T1547],
-                [T1057, T1070, T1059 ], [T1057, T1070, T1005], [T1057, T1547, T1059 ], [T1070, T1547, T1005],
+                [T1082, T1057, T1059], [T1082, T1070, T1547], [T1082, T1070, T1059], [T1082, T1547, T1005],
+                [T1082, T1059, T1005], [T1083, T1057, T1547], [T1083, T1057, T1005], [T1083, T1070, T1059],
+                [T1083, T1070, T1005], [T1083, T1547, T1059], [T1083, T1059, T1005], [T1057, T1070, T1547],
+                [T1057, T1070, T1059], [T1057, T1070, T1005], [T1057, T1547, T1059], [T1070, T1547, T1005],
                 [T1547, T1059, T1005]]
     
+    #programs = [[T1083, T1057, T1005]]
 
     curStep = 1
     finalStep = 21 * 4 # num programs * (merge, extension fix, transform, compile)

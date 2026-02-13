@@ -24,14 +24,14 @@ typedef DWORD PID;
 #define OPEN_PROCESS 2
 #define K32_GET_MODULE_BASE_NAME_W 3
 #define GET_LAST_ERROR 4
-static const char* kernel32Procedures[5] = { "CloseHandle", "K32EnumProcesses", "OpenProcess", "K32GetModuleBaseNameW",
+static const char* t1057_kernel32Procedures[5] = { "CloseHandle", "K32EnumProcesses", "OpenProcess", "K32GetModuleBaseNameW",
 												"GetLastError" };
 
 // advapi32.dll
 #define OPEN_PROCESS_TOKEN 0
 #define GET_TOKEN_INFORMATION 1
 #define LOOKUP_PRIVILEGE_NAME_W 2
-static const char* advapi32Procedures[3] = { "OpenProcessToken", "GetTokenInformation", "LookupPrivilegeNameW" };
+static const char* t1057_advapi32Procedures[3] = { "OpenProcessToken", "GetTokenInformation", "LookupPrivilegeNameW" };
 
 
 // https://github.com/nand0san/av_detect/blob/main/processes.csv
@@ -467,8 +467,8 @@ static void collect_process_info(ProcedureList* pKernel32, ProcedureList* pAdvAp
 //
 void execute_t1057()
 {
-	ProcedureList kernel32 = procedure_list_create("kernel32.dll", kernel32Procedures, ARRAYSIZE(kernel32Procedures));
-	ProcedureList advapi = procedure_list_create("advapi32.dll", advapi32Procedures, ARRAYSIZE(advapi32Procedures));
+	ProcedureList kernel32 = procedure_list_create("kernel32.dll", t1057_kernel32Procedures, ARRAYSIZE(t1057_kernel32Procedures));
+	ProcedureList advapi = procedure_list_create("advapi32.dll", t1057_advapi32Procedures, ARRAYSIZE(t1057_advapi32Procedures));
 
 	HANDLE hLog = open_log_file(L"LOG_T1057_");
 	write_to_file(hLog, L"\n\nScanning Processes..\n");
