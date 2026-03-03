@@ -25,15 +25,15 @@ static const char* t1059_kernel32Procedures[4] = { "CreateProcessW", "CloseHandl
 static const char* t1059_shell32Procedures[1] = { "ShellExecuteW" };
 
 
-static LPCWSTR ps = L"powershell.exe -NoProfile -ExecutionPolicy Bypass echo \"Hello PowerShell!\"";
-
-
 static launch_ps_1(ProcedureList* pKernel32)
 {
 	STARTUPINFOW si = { 0 };
 	PROCESS_INFORMATION pi = { 0 };
+
+	WCHAR cmdline[] =
+		L"powershell.exe -NoProfile -ExecutionPolicy Bypass -Command \"echo 'Hello PowerShell!'\"";
 	PFN_CreateProcessW create_process_w = *VECTOR_AT(pKernel32->procedures, PFN_CreateProcessW, CREATE_PROCESS_W);
-	if (!create_process_w(NULL, ps, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi))
+	if (!create_process_w(NULL, cmdline, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi))
 	{
 		PRINT_WIN32_ERROR(CreateProcessW);
 		assert(FALSE);
