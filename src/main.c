@@ -28,6 +28,7 @@ static set_seed()
 }
 //
 //
+
 int main(int argc, char** argv)
 {
 #ifndef NDEBUG
@@ -36,7 +37,6 @@ int main(int argc, char** argv)
 		_CRTDBG_LEAK_CHECK_DF 
 	);
 #endif
-
 	set_seed();
 	init_common();
 

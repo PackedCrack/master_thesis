@@ -3,6 +3,7 @@
 
 #include "../misc/common.h"
 #include "../misc/function_pointers.h"
+#include "../misc/wstr.h"
 #include "../runtime_linking.h"
 
 #include <assert.h>
@@ -30,15 +31,15 @@ static launch_ps_1(ProcedureList* pKernel32)
 	STARTUPINFOW si = { 0 };
 	PROCESS_INFORMATION pi = { 0 };
 
-	WCHAR cmdline[] =
-		L"powershell.exe -NoProfile -ExecutionPolicy Bypass -Command \"echo 'Hello PowerShell!'\"";
+	WideString cmd = WSTRING_CREATE(L"powershell.exe -NoProfile -ExecutionPolicy Bypass -Command \"echo 'Hello PowerShell!'\"");
 	PFN_CreateProcessW create_process_w = *VECTOR_AT(pKernel32->procedures, PFN_CreateProcessW, CREATE_PROCESS_W);
-	if (!create_process_w(NULL, cmdline, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi))
+	if (!create_process_w(NULL, WSTRING_C_STR(cmd), NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi))
 	{
 		PRINT_WIN32_ERROR(CreateProcessW);
 		assert(FALSE);
 	}
 
+	WSTRING_DESTROY(cmd);
 
 	PFN_WaitForSingleObject wait_for_single_object = *VECTOR_AT(pKernel32->procedures, 
 																PFN_WaitForSingleObject, 

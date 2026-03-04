@@ -419,6 +419,7 @@ FodyWeavers.xsd
 
 build
 vs
+vsbuild
 build-python
 build-python-baseline
 *.log

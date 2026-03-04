@@ -106,15 +106,35 @@ def tigress_merge(vcvars64: Path, tigressLocation: Path, sourceLocation: Path, o
     tigress = subprocess.list2cmdline([tigressLocation, "--FilePrefix=AUTO", *defines, "--Merge", *sources, f"--out={out}"])
     cmdline = f'call "{vcvars64}" && call {tigress}'
 
-    try:
-        subprocess.run(cmdline, 
-                       cwd = str(sourceLocation), 
-                       shell = True, 
-                       check = True,
-                       capture_output = True,
-                       text = True)
-    except subprocess.CalledProcessError as err:
-        log(f"Trigress failed to merge {program}. \nSTDOUT: {err.stdout}\nSTDERR: {err.stderr}")
+    #try:
+    #    subprocess.run(cmdline, 
+    #                   cwd = str(sourceLocation), 
+    #                   shell = True, 
+    #                   check = True,
+    #                   capture_output = True,
+    #                   text = True)
+    #except subprocess.CalledProcessError as err:
+    #    log(f"Trigress failed to merge {program}. \nSTDOUT: {err.stdout}\nSTDERR: {err.stderr}")
+
+    cmd = [str(tigressLocation), "--FilePrefix=AUTO", *defines, "--Merge", *sources, f"--out={out}"]
+    env = vcvars_env(vcvars64)
+    process = subprocess.run(cmd,
+                             cwd = str(sourceLocation),
+                             capture_output = True,
+                             env = env,
+                             text = True,
+                             check = False
+                             )
+    
+    o = Path(out)
+    if process.returncode != 0:
+        log(f"Tigress merging failed for {program}. \nSTDOUT: {process.stdout}\nSTDERR: {process.stderr}")
+    else:
+        try:    # Check if tigress produced file exist and is not empty
+            if ((not o.is_file()) or (o.stat().st_size < 1)):
+                log(f"Tigress merging failed for {program}. \nSTDOUT: {process.stdout}\nSTDERR: {process.stderr}")
+        except FileNotFoundError:
+            log(f"Tigress merging failed for {program}. \nSTDOUT: {process.stdout}\nSTDERR: {process.stderr}")
 
 @beartype
 def fix_msvc_extensions(file: Path):
@@ -640,14 +660,14 @@ def main():
     T1059 = "T1059" # F
     T1005 = "T1005" # G
 
-    programs = [[T1082, T1083, T1057], [T1082, T1083, T1070], [T1082, T1083, T1547], [T1082, T1057, T1005],
-                [T1082, T1057, T1059], [T1082, T1070, T1547], [T1082, T1070, T1059], [T1082, T1547, T1005],
-                [T1082, T1059, T1005], [T1083, T1057, T1547], [T1083, T1057, T1005], [T1083, T1070, T1059],
-                [T1083, T1070, T1005], [T1083, T1547, T1059], [T1083, T1059, T1005], [T1057, T1070, T1547],
-                [T1057, T1070, T1059], [T1057, T1070, T1005], [T1057, T1547, T1059], [T1070, T1547, T1005],
-                [T1547, T1059, T1005]]
+    #programs = [[T1082, T1083, T1057], [T1082, T1083, T1070], [T1082, T1083, T1547], [T1082, T1057, T1005],
+    #            [T1082, T1057, T1059], [T1082, T1070, T1547], [T1082, T1070, T1059], [T1082, T1547, T1005],
+    #            [T1082, T1059, T1005], [T1083, T1057, T1547], [T1083, T1057, T1005], [T1083, T1070, T1059],
+    #            [T1083, T1070, T1005], [T1083, T1547, T1059], [T1083, T1059, T1005], [T1057, T1070, T1547],
+    #            [T1057, T1070, T1059], [T1057, T1070, T1005], [T1057, T1547, T1059], [T1070, T1547, T1005],
+    #            [T1547, T1059, T1005]]
     
-    #programs = [[T1083, T1057, T1005]]
+    programs = [[T1082, T1057, T1059]]
 
     curStep = 1
     finalStep = 21 * 4 # num programs * (merge, extension fix, transform, compile)
