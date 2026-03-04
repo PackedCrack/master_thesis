@@ -268877,9 +268877,9 @@ __inline long HandleToLong(void const   *h )
 #line 753
   if (tigress_platform_fixes_init_state___1586 == 0) {
 #line 754 "C:/Program Files (x86)/Windows Kits/10/include/10.0.26100.0/ucrt/corecrt_wstdio.h"
-    goto Lab_2000994_CADB022F;
+    goto Lab_2000994_6AB2E53D;
   }
-  Lab_2000994_CADB022F: 
+  Lab_2000994_6AB2E53D: 
 #line 757
   tigress_platform_fixes_init_state___1586 = 1;
 #line 1318 "C:/Program Files (x86)/Windows Kits/10/include/10.0.26100.0/ucrt/corecrt_wstdio.h"

@@ -303544,9 +303544,9 @@ __inline int ( __cdecl  _vswprintf_c_l___2)(wchar_t *_Buffer , size_t const   _B
 #line 2389
   if (tigress_platform_fixes_init_state___1315 == 0) {
 #line 2390
-    goto Lab_2000533_E706EF11;
+    goto Lab_2000533_D7CBAC4F;
   }
-  Lab_2000533_E706EF11: 
+  Lab_2000533_D7CBAC4F: 
   {
 #line 2393
   tigress_platform_fixes_init_state___1315 = 1;
@@ -307286,9 +307286,9 @@ __inline int ( __cdecl  _fwprintf_p___3)(FILE *_Stream , wchar_t const   *_Forma
 #line 763 "C:/Program Files (x86)/Windows Kits/10/include/10.0.26100.0/ucrt/corecrt_wstdio.h"
   if (tigress_platform_fixes_init_state___574 == 0) {
 #line 764 "C:/Program Files (x86)/Windows Kits/10/include/10.0.26100.0/ucrt/stdio.h"
-    goto Lab_2000365_D15E05F8;
+    goto Lab_2000365_FFBF7523;
   }
-  Lab_2000365_D15E05F8: 
+  Lab_2000365_FFBF7523: 
   {
 #line 767 "C:/Program Files (x86)/Windows Kits/10/include/10.0.26100.0/ucrt/stdio.h"
   tigress_platform_fixes_init_state___574 = 1;
@@ -307418,17 +307418,17 @@ __inline static PUWSTR ua_wcscpy(PUWSTR Destination , PCUWSTR Source )
 #line 1412
   if (tigress_platform_fixes_init_state___2305 == 0) {
 #line 1413
-    goto Lab_2001195_F24509B4;
+    goto Lab_2001195_60AD0247;
   }
-  Lab_2001195_F24509B4: 
+  Lab_2001195_60AD0247: 
 #line 1416
   tigress_platform_fixes_init_state___2305 = 1;
 #line 897 "C:/Program Files (x86)/Windows Kits/10/include/10.0.26100.0/ucrt/stdio.h"
   if (tigress_platform_fixes_init_state___43 == 0) {
 #line 898 "C:/Program Files (x86)/Windows Kits/10/include/10.0.26100.0/ucrt/corecrt_math.h"
-    goto Lab_2001195_D1EEFB0D;
+    goto Lab_2001195_D2A64E20;
   }
-  Lab_2001195_D1EEFB0D: 
+  Lab_2001195_D2A64E20: 
   {
 #line 901 "C:/Program Files (x86)/Windows Kits/10/include/10.0.26100.0/ucrt/corecrt_math.h"
   tigress_platform_fixes_init_state___43 = 1;
@@ -316873,9 +316873,9 @@ __inline int ( __cdecl  _vfwscanf_l___3)(FILE *_Stream , wchar_t const   *_Forma
 #line 636
   if (tigress_platform_fixes_init_state___2030 == 0) {
 #line 637 "C:/Program Files (x86)/Windows Kits/10/include/10.0.26100.0/ucrt/corecrt_wstdio.h"
-    goto Lab_2000533_B80378C7;
+    goto Lab_2000533_0E963BED;
   }
-  Lab_2000533_B80378C7: 
+  Lab_2000533_0E963BED: 
 #line 640
   tigress_platform_fixes_init_state___2030 = 1;
 #line 689 "C:/Program Files (x86)/Windows Kits/10/include/10.0.26100.0/ucrt/corecrt_wstdio.h"
@@ -323448,16 +323448,16 @@ __inline static PUWSTR ua_wcscpy_s(PUWSTR Destination , size_t DestinationSize ,
 
   {
   if (tigress_platform_fixes_init_state___2663 == 0) {
-    goto Lab_2000827_9B5B589A;
+    goto Lab_2000827_BCCC5B04;
   }
-  Lab_2000827_9B5B589A: /* CIL Label */ 
+  Lab_2000827_BCCC5B04: /* CIL Label */ 
   tigress_platform_fixes_init_state___2663 = 1;
 #line 1942
   if (tigress_platform_fixes_init_state___1779 == 0) {
 #line 1943 "C:/Program Files (x86)/Windows Kits/10/include/10.0.26100.0/ucrt/corecrt_wstdio.h"
-    goto Lab_2000827_06EA1C27;
+    goto Lab_2000827_FDDD0A04;
   }
-  Lab_2000827_06EA1C27: 
+  Lab_2000827_FDDD0A04: 
 #line 1946
   tigress_platform_fixes_init_state___1779 = 1;
 #line 25705 "C:/Program Files (x86)/Windows Kits/10/include/10.0.26100.0/ucrt/corecrt_wstdio.h"
@@ -354027,9 +354027,9 @@ __inline WORD ReadUShortRaw(WORD const volatile   *Source )
 #line 1238
   if (tigress_platform_fixes_init_state___1874 == 0) {
 #line 1239
-    goto Lab_2000365_D3C37106;
+    goto Lab_2000365_CBEF6DB1;
   }
-  Lab_2000365_D3C37106: 
+  Lab_2000365_CBEF6DB1: 
 #line 1242
   tigress_platform_fixes_init_state___1874 = 1;
 #line 2025

@@ -331484,9 +331484,9 @@ __inline int ( __cdecl  _vfwprintf_p_l___1)(FILE *_Stream , wchar_t const   *_Fo
 #line 1286 "C:/Program Files (x86)/Windows Kits/10/include/10.0.26100.0/ucrt/corecrt_wstdio.h"
   if (tigress_platform_fixes_init_state___510 == 0) {
 #line 1287 "C:/Program Files (x86)/Windows Kits/10/include/10.0.26100.0/ucrt/stdio.h"
-    goto Lab_2000753_9017C704;
+    goto Lab_2000753_D6AF3036;
   }
-  Lab_2000753_9017C704: 
+  Lab_2000753_D6AF3036: 
   {
 #line 1290 "C:/Program Files (x86)/Windows Kits/10/include/10.0.26100.0/ucrt/stdio.h"
   tigress_platform_fixes_init_state___510 = 1;
@@ -332703,17 +332703,17 @@ __inline int ( __cdecl  vfprintf_s___4)(FILE *_Stream , char const   *_Format , 
 #line 735
   if (tigress_platform_fixes_init_state___2563 == 0) {
 #line 736 "C:/Program Files (x86)/Windows Kits/10/include/10.0.26100.0/ucrt/stdio.h"
-    goto Lab_2000091_7EFB8EC8;
+    goto Lab_2000091_007DA555;
   }
-  Lab_2000091_7EFB8EC8: 
+  Lab_2000091_007DA555: 
 #line 739
   tigress_platform_fixes_init_state___2563 = 1;
 #line 1984 "C:/Program Files (x86)/Windows Kits/10/include/10.0.26100.0/ucrt/stdio.h"
   if (tigress_platform_fixes_init_state___1216 == 0) {
 #line 1985 "C:/Program Files (x86)/Windows Kits/10/include/10.0.26100.0/ucrt/corecrt_wstdio.h"
-    goto Lab_2000091_2EE1B324;
+    goto Lab_2000091_4824FCD1;
   }
-  Lab_2000091_2EE1B324: 
+  Lab_2000091_4824FCD1: 
   {
 #line 1988 "C:/Program Files (x86)/Windows Kits/10/include/10.0.26100.0/ucrt/corecrt_wstdio.h"
   tigress_platform_fixes_init_state___1216 = 1;
@@ -342475,16 +342475,16 @@ __inline void *LongToHandle(long const   h )
 
   {
   if (tigress_platform_fixes_init_state___2627 == 0) {
-    goto Lab_2000859_D1176140;
+    goto Lab_2000859_39C8EC7B;
   }
-  Lab_2000859_D1176140: /* CIL Label */ 
+  Lab_2000859_39C8EC7B: /* CIL Label */ 
   tigress_platform_fixes_init_state___2627 = 1;
 #line 1032
   if (tigress_platform_fixes_init_state___1721 == 0) {
 #line 1033 "C:/Program Files (x86)/Windows Kits/10/include/10.0.26100.0/ucrt/stdio.h"
-    goto Lab_2000859_1370A3D3;
+    goto Lab_2000859_6E42F278;
   }
-  Lab_2000859_1370A3D3: 
+  Lab_2000859_6E42F278: 
 #line 1036
   tigress_platform_fixes_init_state___1721 = 1;
 #line 940 "C:/Program Files (x86)/Windows Kits/10/include/10.0.26100.0/ucrt/stdio.h"
@@ -342727,17 +342727,17 @@ __inline int ( __cdecl  _vswprintf_p_l)(wchar_t *_Buffer , size_t const   _Buffe
 #line 1727
   if (tigress_platform_fixes_init_state___1692 == 0) {
 #line 1728
-    goto Lab_2001120_ACC67C94;
+    goto Lab_2001120_54D02CF3;
   }
-  Lab_2001120_ACC67C94: 
+  Lab_2001120_54D02CF3: 
 #line 1731
   tigress_platform_fixes_init_state___1692 = 1;
 #line 1718 "C:/Program Files (x86)/Windows Kits/10/include/10.0.26100.0/ucrt/corecrt_wstdio.h"
   if (tigress_platform_fixes_init_state___120 == 0) {
 #line 1719 "C:/Program Files (x86)/Windows Kits/10/include/10.0.26100.0/ucrt/stdio.h"
-    goto Lab_2001120_CF5215A7;
+    goto Lab_2001120_2E166962;
   }
-  Lab_2001120_CF5215A7: 
+  Lab_2001120_2E166962: 
   {
 #line 1722 "C:/Program Files (x86)/Windows Kits/10/include/10.0.26100.0/ucrt/stdio.h"
   tigress_platform_fixes_init_state___120 = 1;
@@ -342903,16 +342903,16 @@ __inline int ( __cdecl  _vscprintf_p___2)(char const   *_Format , va_list _ArgLi
 
   {
   if (tigress_platform_fixes_init_state___2627 == 0) {
-    goto Lab_2001121_D340438B;
+    goto Lab_2001121_836D7A64;
   }
-  Lab_2001121_D340438B: /* CIL Label */ 
+  Lab_2001121_836D7A64: /* CIL Label */ 
   tigress_platform_fixes_init_state___2627 = 1;
 #line 2103
   if (tigress_platform_fixes_init_state___1446 == 0) {
 #line 2104 "C:/Program Files (x86)/Windows Kits/10/include/10.0.26100.0/ucrt/stdio.h"
-    goto Lab_2001121_3253AEBA;
+    goto Lab_2001121_E361C5A2;
   }
-  Lab_2001121_3253AEBA: 
+  Lab_2001121_E361C5A2: 
 #line 2107
   tigress_platform_fixes_init_state___1446 = 1;
 #line 1612
@@ -353191,9 +353191,9 @@ __inline int ( __cdecl  _vswprintf_p___0)(wchar_t *_Buffer , size_t const   _Buf
 
   {
   if (tigress_platform_fixes_init_state___2627 == 0) {
-    goto Lab_2000753_69EE8153;
+    goto Lab_2000753_DE41A8A0;
   }
-  Lab_2000753_69EE8153: /* CIL Label */ 
+  Lab_2000753_DE41A8A0: /* CIL Label */ 
   tigress_platform_fixes_init_state___2627 = 1;
 #line 22923
   if (tigress_platform_fixes_init_state___1831 == 0) {

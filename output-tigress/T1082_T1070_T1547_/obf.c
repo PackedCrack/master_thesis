@@ -269752,9 +269752,9 @@ __inline int ( __cdecl  scanf___3)(char const   *_Format  , ...)
 
   {
   if (tigress_platform_fixes_init_state___2611 == 0) {
-    goto Lab_2000244_5100259B;
+    goto Lab_2000244_E41D1527;
   }
-  Lab_2000244_5100259B: /* CIL Label */ 
+  Lab_2000244_E41D1527: /* CIL Label */ 
   tigress_platform_fixes_init_state___2611 = 1;
 #line 1082
   if (tigress_platform_fixes_init_state___2346 == 0) {
@@ -269767,9 +269767,9 @@ __inline int ( __cdecl  scanf___3)(char const   *_Format  , ...)
 #line 1427 "C:/Program Files (x86)/Windows Kits/10/include/10.0.26100.0/ucrt/corecrt_wstdio.h"
   if (tigress_platform_fixes_init_state___483 == 0) {
 #line 1428 "C:/Program Files (x86)/Windows Kits/10/include/10.0.26100.0/ucrt/stdio.h"
-    goto Lab_2000244_88305E67;
+    goto Lab_2000244_05BFF893;
   }
-  Lab_2000244_88305E67: 
+  Lab_2000244_05BFF893: 
   {
 #line 1431 "C:/Program Files (x86)/Windows Kits/10/include/10.0.26100.0/ucrt/stdio.h"
   tigress_platform_fixes_init_state___483 = 1;
@@ -275683,9 +275683,9 @@ __inline int ( __cdecl  _vfwscanf_l)(FILE *_Stream , wchar_t const   *_Format , 
 #line 400
   if (tigress_platform_fixes_init_state___102 == 0) {
 #line 401
-    goto Lab_2001139_079B037C;
+    goto Lab_2001139_EC7C0EC5;
   }
-  Lab_2001139_079B037C: 
+  Lab_2001139_EC7C0EC5: 
   {
 #line 404
   tigress_platform_fixes_init_state___102 = 1;
@@ -282339,9 +282339,9 @@ __inline struct _TEB *NtCurrentTeb(void)
 
   {
   if (tigress_platform_fixes_init_state___2611 == 0) {
-    goto Lab_2001139_BA8E51B1;
+    goto Lab_2001139_C234D50F;
   }
-  Lab_2001139_BA8E51B1: /* CIL Label */ 
+  Lab_2001139_C234D50F: /* CIL Label */ 
   tigress_platform_fixes_init_state___2611 = 1;
 #line 1095
   if (tigress_platform_fixes_init_state___1409 == 0) {

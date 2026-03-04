@@ -283452,16 +283452,16 @@ __inline int ( __cdecl  _scanf_s_l___3)(char const   *_Format , _locale_t const 
 
   {
   if (tigress_platform_fixes_init_state___2657 == 0) {
-    goto Lab_2000634_D9659F2C;
+    goto Lab_2000634_265C61A3;
   }
-  Lab_2000634_D9659F2C: /* CIL Label */ 
+  Lab_2000634_265C61A3: /* CIL Label */ 
   tigress_platform_fixes_init_state___2657 = 1;
 #line 9020
   if (tigress_platform_fixes_init_state___1981 == 0) {
 #line 9021 "C:/Program Files (x86)/Windows Kits/10/include/10.0.26100.0/um/winnt.h"
-    goto Lab_2000634_610E9B1D;
+    goto Lab_2000634_D63F15DB;
   }
-  Lab_2000634_610E9B1D: 
+  Lab_2000634_D63F15DB: 
 #line 9024
   tigress_platform_fixes_init_state___1981 = 1;
 #line 1659 "C:/Program Files (x86)/Windows Kits/10/include/10.0.26100.0/um/winnt.h"
@@ -291960,9 +291960,9 @@ __inline int ( __cdecl  fwscanf_s___4)(FILE *_Stream , wchar_t const   *_Format 
 #line 276 "C:/Program Files (x86)/Windows Kits/10/include/10.0.26100.0/ucrt/corecrt_wstdio.h"
   if (tigress_platform_fixes_init_state___1163 == 0) {
 #line 277 "C:/Program Files (x86)/Windows Kits/10/include/10.0.26100.0/shared/stralign.h"
-    goto Lab_2000150_D4CAB0F5;
+    goto Lab_2000150_DF5E190D;
   }
-  Lab_2000150_D4CAB0F5: 
+  Lab_2000150_DF5E190D: 
   {
 #line 280 "C:/Program Files (x86)/Windows Kits/10/include/10.0.26100.0/shared/stralign.h"
   tigress_platform_fixes_init_state___1163 = 1;
@@ -310329,9 +310329,9 @@ __inline int ( __cdecl  fprintf_s___0)(FILE *_Stream , char const   *_Format  , 
 
   {
   if (tigress_platform_fixes_init_state___2657 == 0) {
-    goto Lab_2000150_C48807DB;
+    goto Lab_2000150_381D5F01;
   }
-  Lab_2000150_C48807DB: /* CIL Label */ 
+  Lab_2000150_381D5F01: /* CIL Label */ 
   tigress_platform_fixes_init_state___2657 = 1;
 #line 2046
   if (tigress_platform_fixes_init_state___2500 == 0) {

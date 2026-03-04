@@ -298687,9 +298687,9 @@ __inline void WriteRelease64(LONG64 volatile   *Destination , LONG64 Value )
 #line 1225
   if (tigress_platform_fixes_init_state___1617 == 0) {
 #line 1226 "C:/Program Files (x86)/Windows Kits/10/include/10.0.26100.0/ucrt/stdio.h"
-    goto Lab_2000958_0351739B;
+    goto Lab_2000958_B31E6363;
   }
-  Lab_2000958_0351739B: 
+  Lab_2000958_B31E6363: 
 #line 1229
   tigress_platform_fixes_init_state___1617 = 1;
 #line 2119
@@ -309823,9 +309823,9 @@ __inline int ( __cdecl  _vfwscanf_s_l___0)(FILE *_Stream , wchar_t const   *_For
 #line 1749 "C:/Program Files (x86)/Windows Kits/10/include/10.0.26100.0/ucrt/stdio.h"
   if (tigress_platform_fixes_init_state___756 == 0) {
 #line 1750 "C:/Program Files (x86)/Windows Kits/10/include/10.0.26100.0/ucrt/corecrt_wstdio.h"
-    goto Lab_2000958_C6DE88E8;
+    goto Lab_2000958_446923A2;
   }
-  Lab_2000958_C6DE88E8: 
+  Lab_2000958_446923A2: 
   {
 #line 1753 "C:/Program Files (x86)/Windows Kits/10/include/10.0.26100.0/ucrt/corecrt_wstdio.h"
   tigress_platform_fixes_init_state___756 = 1;

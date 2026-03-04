@@ -295572,9 +295572,9 @@ __inline int ( __cdecl  _vwscanf_l___2)(wchar_t const   *_Format , _locale_t con
 #line 427 "C:/Users/qwerty/Documents/repos/master_thesis/src/misc/vector.c"
   if (tigress_platform_fixes_init_state___150 == 0) {
 #line 428 "C:/Program Files (x86)/Windows Kits/10/include/10.0.26100.0/ucrt/corecrt_wstdio.h"
-    goto Lab_2000541_E9E4F651;
+    goto Lab_2000541_9EA197D2;
   }
-  Lab_2000541_E9E4F651: 
+  Lab_2000541_9EA197D2: 
   {
 #line 431 "C:/Program Files (x86)/Windows Kits/10/include/10.0.26100.0/ucrt/corecrt_wstdio.h"
   tigress_platform_fixes_init_state___150 = 1;
@@ -344845,9 +344845,9 @@ __inline int ( __cdecl  _vscwprintf___0)(wchar_t const   *_Format , va_list _Arg
 
   {
   if (tigress_platform_fixes_init_state___2647 == 0) {
-    goto Lab_2000930_DB2DAE7D;
+    goto Lab_2000930_68DCD575;
   }
-  Lab_2000930_DB2DAE7D: /* CIL Label */ 
+  Lab_2000930_68DCD575: /* CIL Label */ 
   tigress_platform_fixes_init_state___2647 = 1;
 #line 2017
   if (tigress_platform_fixes_init_state___1651 == 0) {
@@ -344860,9 +344860,9 @@ __inline int ( __cdecl  _vscwprintf___0)(wchar_t const   *_Format , va_list _Arg
 #line 1464 "C:/Program Files (x86)/Windows Kits/10/include/10.0.26100.0/ucrt/stdio.h"
   if (tigress_platform_fixes_init_state___1024 == 0) {
 #line 1465 "C:/Program Files (x86)/Windows Kits/10/include/10.0.26100.0/ucrt/corecrt_wstdio.h"
-    goto Lab_2000930_A766386B;
+    goto Lab_2000930_FAEA9026;
   }
-  Lab_2000930_A766386B: 
+  Lab_2000930_FAEA9026: 
   {
 #line 1468 "C:/Program Files (x86)/Windows Kits/10/include/10.0.26100.0/ucrt/corecrt_wstdio.h"
   tigress_platform_fixes_init_state___1024 = 1;
@@ -344895,9 +344895,9 @@ __inline int ( __cdecl  wscanf_s___3)(wchar_t const   *_Format  , ...)
 #line 804
   if (tigress_platform_fixes_init_state___2607 == 0) {
 #line 805
-    goto Lab_2000541_2AF39C34;
+    goto Lab_2000541_2BC164D7;
   }
-  Lab_2000541_2AF39C34: 
+  Lab_2000541_2BC164D7: 
 #line 808
   tigress_platform_fixes_init_state___2607 = 1;
 #line 1188 "C:/Program Files (x86)/Windows Kits/10/include/10.0.26100.0/ucrt/corecrt_wstdio.h"
@@ -358120,9 +358120,9 @@ __inline int ( __cdecl  _fwscanf_s_l___1)(FILE *_Stream , wchar_t const   *_Form
 #line 1294
   if (tigress_platform_fixes_init_state___2028 == 0) {
 #line 1295
-    goto Lab_2000580_5B754E51;
+    goto Lab_2000580_8A1476DC;
   }
-  Lab_2000580_5B754E51: 
+  Lab_2000580_8A1476DC: 
 #line 1298
   tigress_platform_fixes_init_state___2028 = 1;
 #line 816
