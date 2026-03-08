@@ -250,7 +250,7 @@ def make_technique_functions(program: list[str]) -> list[str]:
         "init_com",
         "store_lnk_file",
         "add_lnk_to_startup_dir",
-        "execute_t1574_001",
+        "execute_t1547_001",
     ]
     T1082 = [
         "get_registry_dword_value",
@@ -666,6 +666,7 @@ def main():
                 [T1083, T1070, T1005], [T1083, T1547, T1059], [T1083, T1059, T1005], [T1057, T1070, T1547],
                 [T1057, T1070, T1059], [T1057, T1070, T1005], [T1057, T1547, T1059], [T1070, T1547, T1005],
                 [T1547, T1059, T1005]]
+    
     
     curStep = 1
     finalStep = 21 * 4 # num programs * (merge, extension fix, transform, compile)

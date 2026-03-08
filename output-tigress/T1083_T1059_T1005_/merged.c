@@ -2033,7 +2033,7 @@ BEGIN-UNIVERSE
           "ImmEnumInputContext", "ImmGetImeMenuItemsA",
           "ImmGetImeMenuItemsW", "ImmDisableTextFrameService",
           "ImmDisableLegacyIME", "execute_t1082", "execute_t1057",
-          "execute_t1070_004", "execute_t1574_001", "__acrt_iob_func",
+          "execute_t1070_004", "execute_t1547_001", "__acrt_iob_func",
           "fgetwc", "_fgetwchar", "fputwc", "_fputwchar", "getwc",
           "getwchar", "fgetws", "fputws", "_getws_s", "putwc", "putwchar",
           "_putws", "ungetwc", "_wfdopen", "_wfopen", "_wfopen_s",
@@ -68853,6 +68853,10 @@ typedef SCOPE_TABLE_AMD64 SCOPE_TABLE;
 extern IID const   IID_IEnumVARIANT ;
 /* END VARIABLE-DECL-EXTERN IID_IEnumVARIANT LOC=C:/Program Files (x86)/Windows Kits/10/include/10.0.26100.0/um/oaidl.h:2484 VKEY=85567 */
 
+/* BEGIN FUNCTION-DECL-EXTERN execute_t1547_001 LOC=C:/Users/qwerty/Documents/repos/master_thesis/src/T1547.001/T1547.001.h:4 VKEY=23917 */
+extern void execute_t1547_001(char **argv ) ;
+/* END FUNCTION-DECL-EXTERN execute_t1547_001 LOC=C:/Users/qwerty/Documents/repos/master_thesis/src/T1547.001/T1547.001.h:4 VKEY=23917 */
+
 /* BEGIN TYPEDEF IProfferServiceVtbl LOC=C:/Program Files (x86)/Windows Kits/10/include/10.0.26100.0/um/shobjidl_core.h:8640 */
 typedef struct IProfferServiceVtbl IProfferServiceVtbl;
 /* END TYPEDEF IProfferServiceVtbl LOC=C:/Program Files (x86)/Windows Kits/10/include/10.0.26100.0/um/shobjidl_core.h:8640 */
@@ -113340,10 +113344,6 @@ struct AsyncIAdviseSink2Vtbl {
 /* BEGIN TYPEDEF STRRET_TYPE LOC=C:/Program Files (x86)/Windows Kits/10/include/10.0.26100.0/um/shtypes.h:268 */
 typedef enum tagSTRRET_TYPE STRRET_TYPE;
 /* END TYPEDEF STRRET_TYPE LOC=C:/Program Files (x86)/Windows Kits/10/include/10.0.26100.0/um/shtypes.h:268 */
-
-/* BEGIN FUNCTION-DECL-EXTERN execute_t1574_001 LOC=C:/Users/qwerty/Documents/repos/master_thesis/src/T1547.001/T1547.001.h:4 VKEY=23917 */
-extern void execute_t1574_001(char **argv ) ;
-/* END FUNCTION-DECL-EXTERN execute_t1574_001 LOC=C:/Users/qwerty/Documents/repos/master_thesis/src/T1547.001/T1547.001.h:4 VKEY=23917 */
 
 /* BEGIN FUNCTION-DECL-EXTERN GetHandleInformation LOC=C:/Program Files (x86)/Windows Kits/10/include/10.0.26100.0/um/handleapi.h:78 VKEY=4204 */
 extern  __declspec(dllimport)  BOOL ( __stdcall  GetHandleInformation)(HANDLE hObject ,
@@ -186270,22 +186270,22 @@ static int launch_ps_3(ProcedureList *pKernel32 )
   Lab_2000203: /* CIL Label */ 
   tigress_platform_fixes_init_state = 1;
   {
-#line 66 "C:/Users/qwerty/Documents/repos/master_thesis/src/T1059.001/T1059.001.c"
+#line 67 "C:/Users/qwerty/Documents/repos/master_thesis/src/T1059.001/T1059.001.c"
   tmp = details_vector_at(& pKernel32->procedures, (size_t )3);
-#line 66
-  win_exec = *((PFN_WinExec *)tmp);
 #line 67
+  win_exec = *((PFN_WinExec *)tmp);
+#line 68
   tmp___0 = (*win_exec)((LPCSTR )"powershell.exe -NoProfile -ExecutionPolicy Bypass echo \"Hello PowerShell!\"; Start-Sleep -Seconds 2",
                         (UINT )1);
-#line 67
+#line 68
   err = (int32_t )tmp___0;
   }
-#line 69
+#line 70
   if (err <= 31) {
-#line 71
+#line 72
     printf___3((char const   *)"WinExec failed with error: 0x%lX", err);
   }
-#line 74
+#line 75
   return (0);
 }
 }
@@ -192105,20 +192105,20 @@ int main(int argc , char **argv , char **_TIG_IZ__stdout___1_formal_envp )
     break;
   }
   {
-#line 40 "C:/Users/qwerty/Documents/repos/master_thesis/src/main.c"
+#line 39 "C:/Users/qwerty/Documents/repos/master_thesis/src/main.c"
   set_seed();
-#line 41
+#line 40
   init_common();
-#line 52
+#line 47
   execute_t1083();
-#line 64
+#line 59
   execute_t1059_001();
-#line 68
+#line 63
   execute_t1005();
-#line 71
+#line 70
   deinit_common();
   }
-#line 73
+#line 72
   return (0);
 }
 }
@@ -200612,22 +200612,22 @@ static int launch_ps_2(ProcedureList *pShell32 )
   Lab_2000204: /* CIL Label */ 
   tigress_platform_fixes_init_state = 1;
   {
-#line 55 "C:/Users/qwerty/Documents/repos/master_thesis/src/T1059.001/T1059.001.c"
+#line 56 "C:/Users/qwerty/Documents/repos/master_thesis/src/T1059.001/T1059.001.c"
   args = (LPCWSTR )L"-NoProfile -ExecutionPolicy Bypass echo \"Hello PowerShell!\"; Start-Sleep -Seconds 2";
-#line 57
-  tmp = details_vector_at(& pShell32->procedures, (size_t )0);
-#line 57
-  shell_execute_w = *((PFN_ShellExecuteW *)tmp);
 #line 58
+  tmp = details_vector_at(& pShell32->procedures, (size_t )0);
+#line 58
+  shell_execute_w = *((PFN_ShellExecuteW *)tmp);
+#line 59
   tmp___0 = (*shell_execute_w)((HWND )((void *)0), (LPCWSTR )L"open", (LPCWSTR )L"powershell.exe",
                                args, (LPCWSTR )((void *)0), 1);
   }
-#line 58
+#line 59
   if ((unsigned __int64 )tmp___0 <= 32UL) {
-#line 60
+#line 61
     print_win32_err((char const   *)"ShellExecuteW");
   }
-#line 63
+#line 64
   return (0);
 }
 }
@@ -203751,28 +203751,28 @@ void execute_t1059_001(void)
   Lab_2000202: /* CIL Label */ 
   tigress_platform_fixes_init_state = 1;
   {
-#line 79 "C:/Users/qwerty/Documents/repos/master_thesis/src/T1059.001/T1059.001.c"
+#line 80 "C:/Users/qwerty/Documents/repos/master_thesis/src/T1059.001/T1059.001.c"
   tmp = procedure_list_create((char const   *)"kernel32.dll", t1059_kernel32Procedures,
                               (size_t )(sizeof(t1059_kernel32Procedures) / sizeof(t1059_kernel32Procedures[0])));
-#line 79
-  kernel32 = tmp;
 #line 80
+  kernel32 = tmp;
+#line 81
   tmp___0 = procedure_list_create((char const   *)"shell32.dll", t1059_shell32Procedures,
                                   (size_t )(sizeof(t1059_shell32Procedures) / sizeof(t1059_shell32Procedures[0])));
-#line 80
+#line 81
   shell32 = tmp___0;
-#line 82
-  launch_ps_1(& kernel32);
 #line 83
-  launch_ps_2(& shell32);
+  launch_ps_1(& kernel32);
 #line 84
+  launch_ps_2(& shell32);
+#line 85
   launch_ps_3(& kernel32);
-#line 86
-  procedure_list_destroy(& shell32);
 #line 87
+  procedure_list_destroy(& shell32);
+#line 88
   procedure_list_destroy(& kernel32);
   }
-#line 88
+#line 89
   return;
 }
 }
@@ -219436,53 +219436,55 @@ static int launch_ps_1(ProcedureList *pKernel32 )
 #line 31
   si.hStdError = (void *)0;
 #line 32
+  si.cb = sizeof(STARTUPINFOW );
+#line 33
   pi.hProcess = (HANDLE )0;
-#line 32
+#line 33
   pi.hThread = (void *)0;
-#line 32
+#line 33
   pi.dwProcessId = 0UL;
-#line 32
+#line 33
   pi.dwThreadId = 0UL;
-#line 34
+#line 35
   tmp = details_wstring_create((wchar_t const   *)L"powershell.exe -NoProfile -ExecutionPolicy Bypass -Command \"echo \'Hello PowerShell!\'\"",
                                (size_t )(sizeof(L"powershell.exe -NoProfile -ExecutionPolicy Bypass -Command \"echo \'Hello PowerShell!\'\"") / sizeof(wchar_t )));
-#line 34
+#line 35
   cmd = tmp;
-#line 35
+#line 36
   tmp___0 = details_vector_at(& pKernel32->procedures, (size_t )0);
-#line 35
+#line 36
   create_process_w = *((PFN_CreateProcessW *)tmp___0);
-#line 36
+#line 37
   tmp___1 = details_wstring_c_str((WideString const   *)(& cmd));
-#line 36
+#line 37
   tmp___2 = (*create_process_w)((LPCWSTR )((void *)0), (LPWSTR )tmp___1, (LPSECURITY_ATTRIBUTES )((void *)0),
                                 (LPSECURITY_ATTRIBUTES )((void *)0), 0, (DWORD )0,
                                 (void *)0, (LPCWSTR )((void *)0), & si, & pi);
   }
-#line 36
+#line 37
   if (! tmp___2) {
-#line 38
+#line 39
     print_win32_err((char const   *)"CreateProcessW");
   }
   {
-#line 42
+#line 43
   details_wstring_destroy(& cmd);
-#line 44
+#line 45
   tmp___3 = details_vector_at(& pKernel32->procedures, (size_t )2);
-#line 44
+#line 45
   wait_for_single_object = *((PFN_WaitForSingleObject *)tmp___3);
-#line 47
+#line 48
   (*wait_for_single_object)(pi.hProcess, (DWORD )0xFFFFFFFF);
-#line 49
-  tmp___4 = details_vector_at(& pKernel32->procedures, (size_t )1);
-#line 49
-  close_handle = *((PFN_CloseHandle *)tmp___4);
 #line 50
-  (*close_handle)(pi.hThread);
+  tmp___4 = details_vector_at(& pKernel32->procedures, (size_t )1);
+#line 50
+  close_handle = *((PFN_CloseHandle *)tmp___4);
 #line 51
+  (*close_handle)(pi.hThread);
+#line 52
   (*close_handle)(pi.hProcess);
   }
-#line 52
+#line 53
   return (0);
 }
 }

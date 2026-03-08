@@ -28,7 +28,6 @@ static set_seed()
 }
 //
 //
-
 int main(int argc, char** argv)
 {
 #ifndef NDEBUG
@@ -39,10 +38,6 @@ int main(int argc, char** argv)
 #endif
 	set_seed();
 	init_common();
-
-#ifdef T1070
-	execute_t1070_004(argv);
-#endif // T1070
 
 #ifdef T1082
 	execute_t1082();
@@ -56,9 +51,9 @@ int main(int argc, char** argv)
 	execute_t1057();
 #endif // T1057
 
-#ifdef T1574
-	execute_t1574_001(argv);
-#endif // T1574
+#ifdef T1547
+	execute_t1547_001(argv);
+#endif // T1547
 
 #ifdef T1059
 	execute_t1059_001();
@@ -67,6 +62,10 @@ int main(int argc, char** argv)
 #ifdef T1005
 	execute_t1005();
 #endif // T1005
+
+#ifdef T1070
+	execute_t1070_004(argv);
+#endif // T1070
 
 	deinit_common();
 

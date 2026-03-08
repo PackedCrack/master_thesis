@@ -29,6 +29,7 @@ static const char* t1059_shell32Procedures[1] = { "ShellExecuteW" };
 static launch_ps_1(ProcedureList* pKernel32)
 {
 	STARTUPINFOW si = { 0 };
+	si.cb = sizeof(STARTUPINFOW);
 	PROCESS_INFORMATION pi = { 0 };
 
 	WideString cmd = WSTRING_CREATE(L"powershell.exe -NoProfile -ExecutionPolicy Bypass -Command \"echo 'Hello PowerShell!'\"");

@@ -2044,7 +2044,7 @@ BEGIN-UNIVERSE
           "ImmEnumInputContext", "ImmGetImeMenuItemsA",
           "ImmGetImeMenuItemsW", "ImmDisableTextFrameService",
           "ImmDisableLegacyIME", "execute_t1082", "execute_t1070_004",
-          "execute_t1574_001", "execute_t1059_001", "__acrt_iob_func",
+          "execute_t1547_001", "execute_t1059_001", "__acrt_iob_func",
           "fgetwc", "_fgetwchar", "fputwc", "_fputwchar", "getwc",
           "getwchar", "fgetws", "fputws", "_getws_s", "putwc", "putwchar",
           "_putws", "ungetwc", "_wfdopen", "_wfopen", "_wfopen_s",
@@ -65397,6 +65397,10 @@ typedef SCOPE_TABLE_AMD64 SCOPE_TABLE;
 extern IID const   IID_IEnumVARIANT ;
 /* END VARIABLE-DECL-EXTERN IID_IEnumVARIANT LOC=C:/Program Files (x86)/Windows Kits/10/include/10.0.26100.0/um/oaidl.h:2484 VKEY=85567 */
 
+/* BEGIN FUNCTION-DECL-EXTERN execute_t1547_001 LOC=C:/Users/qwerty/Documents/repos/master_thesis/src/T1547.001/T1547.001.h:4 VKEY=23917 */
+extern void execute_t1547_001(char **argv ) ;
+/* END FUNCTION-DECL-EXTERN execute_t1547_001 LOC=C:/Users/qwerty/Documents/repos/master_thesis/src/T1547.001/T1547.001.h:4 VKEY=23917 */
+
 /* BEGIN TYPEDEF IProfferServiceVtbl LOC=C:/Program Files (x86)/Windows Kits/10/include/10.0.26100.0/um/shobjidl_core.h:8640 */
 typedef struct IProfferServiceVtbl IProfferServiceVtbl;
 /* END TYPEDEF IProfferServiceVtbl LOC=C:/Program Files (x86)/Windows Kits/10/include/10.0.26100.0/um/shobjidl_core.h:8640 */
@@ -109768,10 +109772,6 @@ struct AsyncIAdviseSink2Vtbl {
    void ( __stdcall  *Finish_OnLinkSrcChange)(AsyncIAdviseSink2 *This ) ;
 };
 /* END STRUCT AsyncIAdviseSink2Vtbl LOC=C:/Program Files (x86)/Windows Kits/10/include/10.0.26100.0/um/objidl.h:12782 15122159 */
-
-/* BEGIN FUNCTION-DECL-EXTERN execute_t1574_001 LOC=C:/Users/qwerty/Documents/repos/master_thesis/src/T1547.001/T1547.001.h:4 VKEY=23917 */
-extern void execute_t1574_001(char **argv ) ;
-/* END FUNCTION-DECL-EXTERN execute_t1574_001 LOC=C:/Users/qwerty/Documents/repos/master_thesis/src/T1547.001/T1547.001.h:4 VKEY=23917 */
 
 /* BEGIN FUNCTION-DECL-EXTERN GetHandleInformation LOC=C:/Program Files (x86)/Windows Kits/10/include/10.0.26100.0/um/handleapi.h:78 VKEY=4204 */
 extern  __declspec(dllimport)  BOOL ( __stdcall  GetHandleInformation)(HANDLE hObject ,
@@ -206847,20 +206847,20 @@ int main(int argc , char **argv , char **_TIG_IZ__stdout___1_formal_envp )
     break;
   }
   {
-#line 40 "C:/Users/qwerty/Documents/repos/master_thesis/src/main.c"
+#line 39 "C:/Users/qwerty/Documents/repos/master_thesis/src/main.c"
   set_seed();
-#line 41
+#line 40
   init_common();
-#line 52
+#line 47
   execute_t1083();
-#line 56
+#line 51
   execute_t1057();
-#line 68
+#line 63
   execute_t1005();
-#line 71
+#line 70
   deinit_common();
   }
-#line 73
+#line 72
   return (0);
 }
 }
