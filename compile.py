@@ -3,10 +3,13 @@ from pathlib import Path
 from beartype import beartype
 import os
 import shutil
+import sys
+
 
 g_Symbols = False
 g_LogPath: Path
 g_RunIteration = 0
+g_Progress = 0
 
 @beartype
 def make_log_file(location: Path):
@@ -122,6 +125,16 @@ def delete_directory(directory: Path) -> None:
         shutil.rmtree(directory, ignore_errors = True)
 
 @beartype
+def advance_progress(curStep: int, finalStep: int) -> int:
+    progress = float(curStep) / float(finalStep)
+    percent = min(100.0, progress * 100)
+
+    sys.stdout.write(f"\rProgress: \x1b[42;30m{percent:6.1f}%\x1b[0m")
+    sys.stdout.flush()
+
+    return curStep + 1
+
+@beartype
 def compile_all_programs(srcDirectory: Path, buildDirectory: Path, binaryPath: Path, outputDirectory: Path, flags: list[str]) -> None:
     T1082 = "T1082" # A
     T1083 = "T1083" # B
@@ -138,7 +151,10 @@ def compile_all_programs(srcDirectory: Path, buildDirectory: Path, binaryPath: P
                 [T1057, T1070, T1059 ], [T1057, T1070, T1005], [T1057, T1547, T1059 ], [T1070, T1547, T1005],
                 [T1547, T1059, T1005]]
     
+    global g_Progress
     for program in programs:
+        g_Progress = advance_progress(g_Progress, 64 * len(programs))   # 64 = number of flag combinations
+
         try:
             delete_directory(buildDirectory)
             args = make_cmake_configuration_args(srcDirectory, buildDirectory, program)
