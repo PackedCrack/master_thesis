@@ -1,0 +1,64 @@
+main:
+push, push, sub
+push, sub, lea
+sub, lea, lea
+lea, lea, call
+lea, call, nop
+call, nop, mov
+nop, mov, mov
+mov, mov, mov
+mov, mov, call
+mov, call, mov
+call, mov, mov
+mov, mov, mov
+mov, mov, call
+mov, call, mov
+call, mov, xor
+mov, xor, lea
+xor, lea, pop
+lea, pop, pop
+pop, pop, retn
+
+add:
+mov, mov, push
+mov, push, push
+push, push, sub
+push, sub, lea
+sub, lea, lea
+lea, lea, call
+lea, call, nop
+call, nop, mov
+nop, mov, mov
+mov, mov, add
+mov, add, mov
+add, mov, mov
+mov, mov, mov
+mov, mov, mov
+mov, mov, add
+mov, add, mov
+add, mov, lea
+mov, lea, pop
+lea, pop, pop
+pop, pop, retn
+
+sub:
+mov, mov, push
+mov, push, push
+push, push, sub
+push, sub, lea
+sub, lea, lea
+lea, lea, call
+lea, call, nop
+call, nop, mov
+nop, mov, mov
+mov, mov, sub
+mov, sub, mov
+sub, mov, mov
+mov, mov, mov
+mov, mov, mov
+mov, mov, sub
+mov, sub, mov
+sub, mov, lea
+mov, lea, pop
+lea, pop, pop
+pop, pop, retn
