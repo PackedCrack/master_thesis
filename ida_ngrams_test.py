@@ -29,12 +29,19 @@ def database_exist(binary: Path) -> bool:
 
 def log_is_error_free(outDir: Path) -> bool:
     with open(outDir / "log.txt", "r", encoding = "utf-8") as log:
+        loadedSuccess = False
         for line in log:
             if line.find("ERROR::") != -1:
                 print_fail(f"Log file {str(outDir / "log.txt")} contain error(s).")
                 return False
+            elif line.find("has been successfully loaded into the database") != -1:
+                loadedSuccess = True
 
-    print_success("Found no errors in log file.")  
+        if not loadedSuccess:
+            print_fail(f"Executeable was not loaded successfully into the database. See {str(outDir / "log.txt")}") 
+            return False
+
+    print_success("Executeable loaded successfully into the database.")  
     return True
 
 def correct_ngrams(outDir: Path) -> bool:
