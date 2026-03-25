@@ -1,0 +1,47 @@
+Possible file format: MS-DOS executable (EXE) (C:\Program Files\IDA Professional 9.0\loaders\dos.dll)
+Possible file format: Portable executable for AMD64 (PE) (C:\Program Files\IDA Professional 9.0\loaders\pe.dll)
+
+  bytes   pages size description
+--------- ----- ---- --------------------------------------------
+   524288    64 8192 allocating memory for b-tree...
+   155648    19 8192 allocating memory for virtual array...
+   262144    32 8192 allocating memory for name pointers...
+-----------------------------------------------------------------
+   942080            total memory allocated
+
+Loading file 'C:\Users\qwerty\Documents\repos\master_thesis\output\Run_719__Qspectre-load_QIntel-jcc-erratum_guard-cf_GL\mal_techniques.exeT1082T1057T1059' into database...
+Detected file format: Portable executable for AMD64 (PE)
+Loading processor module C:\Program Files\IDA Professional 9.0\procs\pc.dll for metapc...Initializing processor module metapc...OK
+Autoanalysis subsystem has been initialized.
+  0. Creating a new segment  (0000000140001000-0000000140007000) ... ... OK
+  1. Creating a new segment  (0000000140007000-000000014000B000) ... ... OK
+  2. Creating a new segment  (000000014000B000-000000014000C000) ... ... OK
+  3. Creating a new segment  (000000014000C000-000000014000D000) ... ... OK
+Reading imports directory...
+Reading exception directory (.pdata)...
+Applying fixups...
+  4. Creating a new segment  (0000000140007228-000000014000B000) ... ... OK
+Plan  FLIRT signature: Microsoft VisualC v14 64bit runtime
+Plan  FLIRT signature: Microsoft VisualC 64bit universal runtime
+main() function at 140004F40, named "main"
+Type library 'mssdk64_win7' loaded. Applying types...
+Types applied to 57 names.
+Plan  FLIRT signature: SEH for vc64 7-14
+Marking typical code sequences...
+Flushing buffers, please wait...ok
+File 'C:\Users\qwerty\Documents\repos\master_thesis\output\Run_719__Qspectre-load_QIntel-jcc-erratum_guard-cf_GL\mal_techniques.exeT1082T1057T1059' has been successfully loaded into the database.
+Hex-Rays Decompiler plugin has been loaded (v9.0.0.241217)
+  The hotkeys are F5: decompile, Ctrl-F5: decompile all.
+
+  Please check the Edit/Plugins menu for more information.
+Hex-rays version 9.0.0.241217 has been detected, gooMBA plugin ready to use
+IDA is analysing the input file...
+You may start to explore the input file right now.
+Using FLIRT signature: Microsoft VisualC v14 64bit runtime
+Using FLIRT signature: Microsoft VisualC 64bit universal runtime
+Using FLIRT signature: SEH for vc64 7-14
+Propagating type information...
+Function argument information has been propagated
+The initial autoanalysis has been finished.
+Flushing buffers, please wait...ok
+Unloading IDP module C:\Program Files\IDA Professional 9.0\procs\pc.dll...

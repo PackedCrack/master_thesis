@@ -1,0 +1,24 @@
+Database C:\Users\qwerty\Documents\repos\master_thesis\output\Run_799__Qspectre-load_Gs0_QIntel-jcc-erratum\mal_techniques.exeT1082T1083T1057.i64 already exists.
+Do you want to overwrite it? -> ~L~oad existing
+
+  bytes   pages size description
+--------- ----- ---- --------------------------------------------
+   524288    64 8192 allocating memory for b-tree...
+   147456    18 8192 allocating memory for virtual array...
+   262144    32 8192 allocating memory for name pointers...
+-----------------------------------------------------------------
+   933888            total memory allocated
+
+Loading processor module C:\Program Files\IDA Professional 9.0\procs\pc.dll for metapc...Initializing processor module metapc...OK
+Loading type libraries...
+Autoanalysis subsystem has been initialized.
+Database for file 'mal_techniques.exeT1082T1083T1057' has been loaded.
+Hex-Rays Decompiler plugin has been loaded (v9.0.0.241217)
+  The hotkeys are F5: decompile, Ctrl-F5: decompile all.
+
+  Please check the Edit/Plugins menu for more information.
+Hex-rays version 9.0.0.241217 has been detected, gooMBA plugin ready to use
+INFO::C:\Users\qwerty\Documents\repos\master_thesis\output\Run_799__Qspectre-load_Gs0_QIntel-jcc-erratum\mal_techniques_exeT1082T1083T1057\ngrams
+INFO::C:\Users\qwerty\Documents\repos\master_thesis\output\Run_799__Qspectre-load_Gs0_QIntel-jcc-erratum\mal_techniques_exeT1082T1083T1057\blacklist\blacklist.txt
+Flushing buffers, please wait...ok
+Unloading IDP module C:\Program Files\IDA Professional 9.0\procs\pc.dll...
