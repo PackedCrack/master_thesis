@@ -407,8 +407,8 @@ def make_transformation_pass(tigressLocation: Path, program: list[str], s: int, 
     return ts
 
 @beartype
-def make_transformation_passes(tigressLocation: Path, program: list[str]) -> list[list[str]]:
-    seed = 1000
+def make_transformation_passes(tigressLocation: Path, program: list[str], seed: int) -> list[list[str]]:
+    #seed = 1000
     functions = make_tigress_functions_arg(program)
 
     passes = []
@@ -437,8 +437,8 @@ def make_tmp_name(file: Path, run: int) -> Path:
     return file.with_suffix(f".pass{run}.c")
 
 @beartype
-def apply_transformations(vcvars64: Path, tigressLocation: Path, file: Path, outFile: Path, program: list[str]):
-    passes = make_transformation_passes(tigressLocation, program)
+def apply_transformations(vcvars64: Path, tigressLocation: Path, file: Path, outFile: Path, program: list[str], seed: int):
+    passes = make_transformation_passes(tigressLocation, program, seed)
 
     env = vcvars_env(vcvars64)
     srcFile = file
@@ -644,12 +644,12 @@ def compile(vcvars64: Path, file: Path, program: list[str]) -> None:
         else:
             log(f"Failed to compile {program}. \nSTDOUT: {err.stdout}\nSTDERR: {err.stderr}")
 
-def main():
+def compile_all(curStep: int, finalStep: int, seed: int) -> int:
     rootDirectory = Path(__file__).resolve().parent
-    outputDirectory = rootDirectory / "output-tigress"
+    outputDirectory = rootDirectory / f"output-tigress_{seed}"
     srcDirectory = rootDirectory / "src"
-    make_log_file(rootDirectory / "compile_tigress.log")         # Create a new log file for this run
-    delete_directory(outputDirectory)                           # Erase all output from previous executions of this script
+    make_log_file(rootDirectory / f"compile_tigress_{seed}.log")            # Create a new log file for this run
+    delete_directory(outputDirectory)                                       # Erase all output from previous executions of this script
 
     T1082 = "T1082" # A
     T1083 = "T1083" # B
@@ -667,8 +667,8 @@ def main():
                 [T1547, T1059, T1005]]
     
     
-    curStep = 1
-    finalStep = 21 * 4 # num programs * (merge, extension fix, transform, compile)
+    #curStep = 1
+    #finalStep = 21 * 4 # num programs * (merge, extension fix, transform, compile)
     vcvars64 = Path(r"C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat")
     tigress = Path(r"C:\Program Files\University of Arizona\Tigress C Source Code Obfuscator\Tigress\tigress.bat")
     for program in programs:
@@ -684,10 +684,15 @@ def main():
 
         mergedFile = outFile
         obfuscatedFile = outputDirectory / folder / Path("obf.c")
-        apply_transformations(vcvars64, tigress, mergedFile, obfuscatedFile, program)
+        apply_transformations(vcvars64, tigress, mergedFile, obfuscatedFile, program, seed)
         curStep = advance_step(curStep, finalStep)
         
         compile(vcvars64, obfuscatedFile, program)
 
+    return curStep
 
-main()
+seeds = [1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 11000, 12000, 13000, 14000, 15000, 16000]
+curStep = 1
+finalStep = 21 * 4 * len(seeds) # num programs * (merge, extension fix, transform, compile)
+for seed in seeds:
+    curStep = compile_all(curStep, finalStep, seed)

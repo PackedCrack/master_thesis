@@ -238,59 +238,67 @@ def full_cleanup():
             pass
 
 
-root = Path(r"C:\Users\qwerty\Documents\repos\master_thesis\output-tigress")
-for d in sorted(root.iterdir()):
-    if not d.is_dir():
-        continue
 
-    print(f"\n\n\nRunning tests for {str(d)}")
-    exe = d / "obf.exe"
-    if not exe.is_file():
-        print(f"{RED}FAIL{RESET} - {exe.parent}")
-        continue
+def run_validations(root: Path):
+    for d in sorted(root.iterdir()):
+        if not d.is_dir():
+            continue
 
-    modules = re.findall(r"T\d{4}", d.name)[:3]
-    if len(modules) != 3:
-        print(f"{RED}FAIL{RESET} - {exe.parent}")
-        continue
+        print(f"\n\n\nRunning tests for {str(d)}")
+        exe = d / "obf.exe"
+        if not exe.is_file():
+            print(f"{RED}FAIL{RESET} - {exe.parent}")
+            continue
 
-    containsDeleteModule = False
-    testsRun = 0
-    for m in modules:
-        if m == "T1059":
-            full_cleanup()
-            test_t1059(exe)
-            testsRun += 1
-        elif m == "T1070":
-            print("Will not look for log files since they are deleted by T1070.")
-            full_cleanup()
-            test_t1070(exe)
-            testsRun += 1
-            containsDeleteModule = True
-        elif m == "T1547":
-            full_cleanup()
-            test_t1547(exe)
-            testsRun += 1
+        modules = re.findall(r"T\d{4}", d.name)[:3]
+        if len(modules) != 3:
+            print(f"{RED}FAIL{RESET} - {exe.parent}")
+            continue
 
-    if containsDeleteModule:
-        continue
+        containsDeleteModule = False
+        testsRun = 0
+        for m in modules:
+            if m == "T1059":
+                full_cleanup()
+                test_t1059(exe)
+                testsRun += 1
+            elif m == "T1070":
+                print("Will not look for log files since they are deleted by T1070.")
+                full_cleanup()
+                test_t1070(exe)
+                testsRun += 1
+                containsDeleteModule = True
+            elif m == "T1547":
+                full_cleanup()
+                test_t1547(exe)
+                testsRun += 1
 
-    full_cleanup()
-    subprocess.run([str(exe)], cwd = str(d), check = False, stdout = subprocess.DEVNULL, stderr = subprocess.DEVNULL)
+        if containsDeleteModule:
+            continue
 
-    for m in modules:
-        if m == "T1005":
-            test_t1005()
-            testsRun += 1
-        elif m == "T1057":
-            test_t1057()
-            testsRun += 1
-        elif m == "T1082":
-            test_t1082()
-            testsRun += 1
-        elif m == "T1083":
-            test_t1083()
-            testsRun += 1
+        full_cleanup()
+        subprocess.run([str(exe)], cwd = str(d), check = False, stdout = subprocess.DEVNULL, stderr = subprocess.DEVNULL)
 
-    if testsRun != 3:
-        print(f"{RED}FAIL (only ran {testsRun} tests but expected 3){RESET} - {exe.parent}")
+        for m in modules:
+            if m == "T1005":
+                test_t1005()
+                testsRun += 1
+            elif m == "T1057":
+                test_t1057()
+                testsRun += 1
+            elif m == "T1082":
+                test_t1082()
+                testsRun += 1
+            elif m == "T1083":
+                test_t1083()
+                testsRun += 1
+
+        if testsRun != 3:
+            print(f"{RED}FAIL (only ran {testsRun} tests but expected 3){RESET} - {exe.parent}")
+
+
+
+seeds = [1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 11000, 12000, 13000, 14000, 15000, 16000]
+for seed in seeds:
+    root = Path(fr"C:\Users\qwerty\Documents\repos\master_thesis\output-tigress_{seed}")
+    run_validations(root)
