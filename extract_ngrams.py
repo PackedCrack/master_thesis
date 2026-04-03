@@ -41,9 +41,13 @@ def get_flag_conf_dir() -> Path:
     return this / "output"
 
 @beartype
-def get_tigress_dir() -> Path:
+def get_tigress_dirs() -> list[Path]:
     this = Path(__file__).resolve().parent
-    return this / "output-tigress"
+    seeds = [1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 11000, 12000, 13000, 14000, 15000, 16000]
+    dirs = []
+    for seed in seeds:
+        dirs.append(Path(this / f"output-tigress_{seed}"))
+    return dirs
 
 @beartype
 def get_baseline_dir() -> Path:
@@ -57,11 +61,12 @@ def clear_all_idb():
         if entry.suffix.lower() == ".i64":
             entry.unlink(missing_ok = True)
 
-    tigressDir = get_tigress_dir()
-    for programDir in tigressDir.iterdir():
-        for entry in programDir.iterdir():
-            if entry.suffix.lower() == ".i64":
-                entry.unlink(missing_ok = True)
+    tigressDirs = get_tigress_dirs()
+    for tigressDir in tigressDirs:
+        for programDir in tigressDir.iterdir():
+            for entry in programDir.iterdir():
+                if entry.suffix.lower() == ".i64":
+                    entry.unlink(missing_ok = True)
 
     flagDir = get_flag_conf_dir()
     for programDir in flagDir.iterdir():
@@ -148,15 +153,16 @@ def process_baselines(curStep: int, finalStep: int) -> int:
     return curStep
 
 def process_tigress(curStep: int, finalStep: int) -> int:
-    tigressDir = get_tigress_dir()
-    for programDir in tigressDir.iterdir():
-        if not programDir.is_file():
-            for entry in programDir.iterdir():
-                if entry.name == "obf.exe":
-                    binary = entry.resolve()
-                    curStep = process_binary(curStep, finalStep, binary)
-        else:
-            log(f"Found unexpected file {str(programDir)} in {str(tigressDir)}")
+    tigressDirs = get_tigress_dirs()
+    for tigressDir in tigressDirs:
+        for programDir in tigressDir.iterdir():
+            if not programDir.is_file():
+                for entry in programDir.iterdir():
+                    if entry.name == "obf.exe":
+                        binary = entry.resolve()
+                        curStep = process_binary(curStep, finalStep, binary)
+            else:
+                log(f"Found unexpected file {str(programDir)} in {str(tigressDir)}")
 
     return curStep
 
@@ -180,7 +186,7 @@ def main():
 
 
     curStep = 1
-    finalStep = (1344 + 21 + 21) * 2 # num flag programs + num baselines + num tigress programs * num ida calls
+    finalStep = (1344 + 21 + (21 * 16)) * 2 # (num flag programs + num baselines + (num tigress programs * num tigress seeds)) * num ida calls
     curStep = process_baselines(curStep, finalStep)
     curStep = process_tigress(curStep, finalStep)
     curStep = process_flag_confs(curStep, finalStep)
