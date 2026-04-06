@@ -8,6 +8,7 @@ import openpyxl.utils
 from openpyxl import Workbook
 import hashlib
 import re
+import pefile
 
 
 # The jensen shannon distance is the sqr of jensen shannon divergence
@@ -54,7 +55,7 @@ def get_tigress_dirs() -> list[Path]:
     dirs = []
     global g_Seeds
     for seed in g_Seeds:
-        dirs.append(Path(this / f"output-tigress_{seed}"))
+        dirs.append(Path(this / f"output-tigress_auto_{seed}"))
     return dirs
 
 @beartype
@@ -264,6 +265,21 @@ def sha256(path: Path) -> str:
         return hashlib.file_digest(f, "sha256").hexdigest()
     
 @beartype
+def hash_text_section(path: Path) -> str:
+    pe = pefile.PE(str(path))
+    h = hashlib.new("sha256")
+
+    for section in pe.sections:
+        name = section.Name.rstrip(b"\x00")
+        if name == b".text":
+            data = section.get_data()  # raw section data from file
+            h.update(data)
+            return h.hexdigest()
+
+    assert False
+    return None
+    
+@beartype
 def compute_tigress_hashes(wb: Workbook, programIds: dict):
     hashes = [["" for _ in range(21)] for _ in range(16)]        # hashes[seed][programid] = hash
     assert len(hashes) == 16                                     # 16 seeds
@@ -285,7 +301,7 @@ def compute_tigress_hashes(wb: Workbook, programIds: dict):
                         log(f"Unexpected missing ngrams file: {str(executable.resolve())}")
                     else:
                         id = programIds[programName]
-                        hashes[seedIndex][id - 1] = sha256(executable)
+                        hashes[seedIndex][id - 1] = hash_text_section(executable)
 
         seedIndex += 1
     
@@ -450,7 +466,7 @@ def compute_flag_jsd(wb: Workbook, programIDs: dict, baselineDistributions: list
     sheet = make_sheet(wb, "Compiler Flags", 20, colNames, rowNames, results)
 
 def main():
-    make_log_file(Path(__file__).resolve().parent / "jsd_compute.log")
+    make_log_file(Path(__file__).resolve().parent / "jsd_compute_auto.log")
 
     programIds = progam_ids()
     baselineDistributions = load_baseline_ngrams(programIds)
@@ -461,6 +477,6 @@ def main():
     compute_tigress_jsd(wb, programIds, baselineDistributions)
     compute_tigress_hashes(wb, programIds)
 
-    wb.save("jsd_results.xlsx")
+    wb.save("jsd_results_auto.xlsx")
 
 main()
