@@ -69,10 +69,7 @@ def get_matrix_values_as_1d(data: dict) -> list:
     return values
 
 @beartype
-def create_heatmap(data: dict, title: str, colorbarLabel: str):
-    colTitles, rowTitles = get_matrix_titles(data)
-    values = get_matrix_values(data)
-
+def plot_heatmap(values: list[list], title: str, colorbarLabel: str, colTitles: list[str], rowTitles: list[str]):
     fig, ax = plt.subplots(figsize = (20, 14))
 
     im = ax.imshow(values, aspect = "auto", cmap = "Reds", vmin = 0.0, vmax = 1.0)
@@ -82,11 +79,35 @@ def create_heatmap(data: dict, title: str, colorbarLabel: str):
     ax.set_yticks(range(len(rowTitles)))
     ax.set_yticklabels(rowTitles)
 
+    ax.set_xticks([x - 0.5 for x in range(1, len(colTitles))], minor = True)
+    ax.set_yticks([y - 0.5 for y in range(1, len(rowTitles))], minor = True)
+    ax.grid(which = "minor", color = "black", linestyle = "-", linewidth = 1)
+    ax.tick_params(which = "minor", bottom = False, left = False)
+
+    for i in range(len(rowTitles)):
+        for j in range(len(colTitles)):
+            ax.text(j, i, f"{values[i][j]:.3f}", ha = "center", va = "center", color = "black")
+
     fig.colorbar(im, ax = ax, label = colorbarLabel)
     ax.set_title(title)
 
     plt.tight_layout()
     plt.show(block = True)
+
+@beartype
+def create_heatmap(data: dict, title: str, colorbarLabel: str):
+    colTitles, rowTitles = get_matrix_titles(data)
+    values = get_matrix_values(data)
+
+    # Hack because 64 rows per plot is too much
+    if title == "Flag Drift":
+        mid = len(values) // 2
+        left = values[:mid]
+        plot_heatmap(left, title, colorbarLabel, colTitles, rowTitles[:mid])
+        right = values[mid:]
+        plot_heatmap(right, title, colorbarLabel, colTitles, rowTitles[mid:])
+    else:
+        plot_heatmap(values, title, colorbarLabel, colTitles, rowTitles)
 
 @beartype
 def create_histogram(data: dict, numBins: int, title: str, xlabel: str, ylabel: str):
@@ -186,16 +207,15 @@ def rq1(flagData: dict):
     for i in range(1, 22):
         labels.append(f"Program {i}")
     create_box_plot(flagData, "Compiler Flag Drift Per Program", "Jensen Shannon Divergence", labels)
-    c = 10
 
 def main():
-    filePath = Path(__file__).resolve().parent / Path("jsd_results.xlsx")
+    filePath = Path(__file__).resolve().parent / Path("jsd_results_auto.xlsx")
 
     wb = load_workbook(filePath, data_only = True, read_only = True)
     
     tigressData = extract_sheet_matrix_data(wb, "Tigress")
     flagData = extract_sheet_matrix_data(wb, "Compiler Flags")
-    #plot_dataset(tigressData, flagData)
+    plot_dataset(tigressData, flagData)
 
     rq1(flagData)
 

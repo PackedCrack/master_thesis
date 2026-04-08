@@ -150,6 +150,37 @@ def make_dataframe() -> pd.DataFrame:
     
     return pd.DataFrame(data)
 
+def compute_mu(model: bmb.Model, fitted, df: pd.DataFrame):
+    # https://bambinos.github.io/bambi/api/Model.html#bambi.Model.predict
+    prediction = model.predict(fitted, data = df, kind = "response_params", include_group_specific = False, inplace = False)
+    return prediction.posterior["mu"]
+
+def avg_jsd_effect(model: bmb.Model, fitted, data: pd.DataFrame, flag: str):
+        off = data.copy()
+        on = data.copy()
+
+        # Update all rows
+        off[flag] = -1
+        on[flag] = +1
+
+        muOff = compute_mu(model, fitted, off)
+        muOn = compute_mu(model, fitted, on)
+
+        difference = muOn - muOff
+
+        # Average over the entire dataset (all flag configurations and programs)
+        observationDims = [d for d in difference.dims if d not in ("chain", "draw")]
+        avgMuOff = muOff.mean(dim = observationDims)
+        avgMuOn = muOn.mean(dim = observationDims)
+        avgDifference = difference.mean(dim = observationDims)
+
+        out = pd.Series({
+            "mean_mu_on": float(avgMuOn.mean(dim = ("chain", "draw"))),
+            "mean_mu_off": float(avgMuOff.mean(dim = ("chain", "draw"))),
+            "mean_effect": float(avgDifference.mean(dim = ("chain", "draw")))
+        })
+
+        return out
 
 @beartype
 def main():
@@ -165,18 +196,18 @@ def main():
             "(1|program_id)"
         )
     
-    idata = None
+    fitted = None
+    model = bmb.Model(formula, df, family = "beta", link = "logit")
     if not modelFile.exists():
-        model = bmb.Model(formula, df, family = "beta", link = "logit")
-        idata = model.fit(draws = 10000, tune = 10000, chains = 8, cores = 8, target_accept = 0.95, random_seed = 42)
-        idata.to_netcdf(str(modelFile))
+        # https://bambinos.github.io/bambi/api/Model.html#bambi.Model.fit
+        fitted = model.fit(draws = 10000, tune = 10000, chains = 8, cores = 8, target_accept = 0.95, random_seed = 42)
+        fitted.to_netcdf(str(modelFile))
     else:
-        model = bmb.Model(formula, df, family = "beta", link = "logit")
-        idata = az.from_netcdf(str(modelFile))
+        fitted = az.from_netcdf(str(modelFile))
 
 
     print(az.summary(
-        idata,
+        fitted,
         var_names=[
             "Intercept",
             "F1_homeparams",
@@ -192,6 +223,23 @@ def main():
         hdi_prob=0.95,
         round_to = 5
     ))
+
+    print("\nDivergence:")
+    print("divergences:", fitted.sample_stats["diverging"].sum().item())
+
+    # https://bambinos.github.io/bambi/api/Model.html#bambi.Model.r2_score
+    #print(model.r2_score(fitted, summary = True))
+
+    #az.plot_trace(fitted, show = True)
+
+    
+    results = pd.DataFrame({
+        term: avg_jsd_effect(model, fitted, df, term)
+        for term in ["F1_homeparams", "F2_Qspectre_load", "F3_Gs0", "F4_favor_INTEL64", "F5_Gh", "F6_QIntel_jcc_erratum", "F7_guard_cf", "F8_GL"]
+    }).T
+
+    print(results)
+    
 
 if __name__ == "__main__":
     main()
