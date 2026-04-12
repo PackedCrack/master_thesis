@@ -1,0 +1,19 @@
+\begin{table}[htbp]
+	\centering
+	\begin{tabular}{lrrr}
+		\textbf{Source} & \textbf{JSD} & \textbf{Configuration/Run} & \textbf{Program ID} \\
+		\hline
+		\textbf{Tigress} & 0.51264032 & 18 & 1 \\
+		\hline
+		\textbf{Tigress} & 0.51268519 & 7 & 10 \\
+		\hline
+		\textbf{Compiler} & 0.51414199 & 11 & 40 \\
+		\hline
+		\textbf{Tigress} & 0.51610417 & 7 & 1 \\
+		\hline
+		\textbf{Tigress} & 0.51734228 & 9 & 7 \\
+		\hline
+	\end{tabular}
+	\caption{RQ3 top 5. Presented numbers are rounded to $8$ decimals.}
+	\label{tab:rq3}
+\end{table}

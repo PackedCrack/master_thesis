@@ -477,6 +477,6 @@ def main():
     compute_tigress_jsd(wb, programIds, baselineDistributions)
     compute_tigress_hashes(wb, programIds)
 
-    wb.save("jsd_results_auto.xlsx")
+    wb.save("jsd_results.xlsx")
 
 main()

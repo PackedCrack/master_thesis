@@ -399,7 +399,8 @@ def make_transformation_cleanup() -> list[str]:
 
 @beartype 
 def make_transformation_pass(tigressLocation: Path, program: list[str], s: int, *transformations: list[str]) -> list[str]:
-    ts = [str(tigressLocation), "--FilePrefix=AUTO", f"--Seed={s}"]
+    #ts = [str(tigressLocation), "--FilePrefix=AUTO", f"--Seed={s}"]
+    ts = [str(tigressLocation), "--FilePrefix=AUTO", f"--Seed={0}"]
     ts.extend(make_tigress_define_args(program))
     for t in transformations:
         ts.extend(t)
@@ -646,10 +647,10 @@ def compile(vcvars64: Path, file: Path, program: list[str]) -> None:
 
 def compile_all(curStep: int, finalStep: int, seed: int) -> int:
     rootDirectory = Path(__file__).resolve().parent
-    outputDirectory = rootDirectory / f"output-tigress_{seed}"
+    outputDirectory = rootDirectory / f"output-tigress_auto_{seed}"
     srcDirectory = rootDirectory / "src"
-    make_log_file(rootDirectory / f"compile_tigress_{seed}.log")            # Create a new log file for this run
-    delete_directory(outputDirectory)                                       # Erase all output from previous executions of this script
+    make_log_file(rootDirectory / f"compile_tigress_auto_{seed}.log")               # Create a new log file for this run
+    delete_directory(outputDirectory)                                               # Erase all output from previous executions of this script
 
     T1082 = "T1082" # A
     T1083 = "T1083" # B

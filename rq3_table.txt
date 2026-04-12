@@ -1,0 +1,51 @@
+\begin{table}[htbp]
+	\centering
+	\begin{tabular}{lrr}
+		\textbf{Program ID} & \textbf{Signed Mean Difference} & \textbf{POS} \\
+		\hline
+		\textbf{1} & 0.22392687 & 0.83789062 \\
+		\hline
+		\textbf{2} & 0.23051730 & 0.90429688 \\
+		\hline
+		\textbf{3} & 0.22255309 & 0.83398438 \\
+		\hline
+		\textbf{4} & 0.22719374 & 0.94335938 \\
+		\hline
+		\textbf{5} & 0.24167343 & 0.99218750 \\
+		\hline
+		\textbf{6} & 0.24307252 & 0.99609375 \\
+		\hline
+		\textbf{7} & 0.26911186 & 1.00000000 \\
+		\hline
+		\textbf{8} & 0.22547703 & 0.94921875 \\
+		\hline
+		\textbf{9} & 0.23730335 & 0.99707031 \\
+		\hline
+		\textbf{10} & 0.20296024 & 0.81250000 \\
+		\hline
+		\textbf{11} & 0.20704766 & 0.81347656 \\
+		\hline
+		\textbf{12} & 0.21636548 & 0.83593750 \\
+		\hline
+		\textbf{13} & 0.21476408 & 0.84667969 \\
+		\hline
+		\textbf{14} & 0.19835265 & 0.81250000 \\
+		\hline
+		\textbf{15} & 0.21003324 & 0.82421875 \\
+		\hline
+		\textbf{16} & 0.22188179 & 0.84082031 \\
+		\hline
+		\textbf{17} & 0.23715974 & 0.99414062 \\
+		\hline
+		\textbf{18} & 0.23150392 & 0.98925781 \\
+		\hline
+		\textbf{19} & 0.21861717 & 0.82128906 \\
+		\hline
+		\textbf{20} & 0.22188917 & 0.95214844 \\
+		\hline
+		\textbf{21} & 0.21527507 & 0.87695312 \\
+		\hline
+	\end{tabular}
+	\caption{R3. Presented numbers are rounded to $8$ decimals.}
+	\label{tab:rq3}
+\end{table}

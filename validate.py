@@ -300,5 +300,5 @@ def run_validations(root: Path):
 
 seeds = [1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 11000, 12000, 13000, 14000, 15000, 16000]
 for seed in seeds:
-    root = Path(fr"C:\Users\qwerty\Documents\repos\master_thesis\output-tigress_{seed}")
+    root = Path(fr"C:\Users\qwerty\Documents\repos\master_thesis\output-tigress_auto_{seed}")
     run_validations(root)
