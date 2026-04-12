@@ -371,6 +371,7 @@ def vcvars_env(vcvars64: Path) -> dict[str, str]:
 @beartype
 def make_transformation_flatten(functions: str) -> list[str]:
     return ["--Transform=Flatten",
+            "--FlattenRandomizeBlocks=true",
             functions]
 
 @beartype
@@ -390,6 +391,7 @@ def make_transformation_random_args(functions: str) -> list[str]:
 @beartype
 def make_transformation_split(functions: str) -> list[str]:
     return ["--Transform=Split",
+            "--SplitCount=5",
             functions]
 
 @beartype
@@ -397,10 +399,14 @@ def make_transformation_cleanup() -> list[str]:
     return ["--Transform=CleanUp",
             "--CleanUpKinds=names,annotations"]
 
+
+g_Num = 0
 @beartype 
 def make_transformation_pass(tigressLocation: Path, program: list[str], s: int, *transformations: list[str]) -> list[str]:
-    #ts = [str(tigressLocation), "--FilePrefix=AUTO", f"--Seed={s}"]
-    ts = [str(tigressLocation), "--FilePrefix=AUTO", f"--Seed={0}"]
+    print(f"Using seed {seed}")
+    global g_Num
+    g_Num += 1
+    ts = [str(tigressLocation), "--FilePrefix=AUTO", f"--Seed={s}", fr"--EventsFile=C:\Users\qwerty\Documents\repos\master_thesis\tigress_log\{g_Num}_stats.json"]
     ts.extend(make_tigress_define_args(program))
     for t in transformations:
         ts.extend(t)
@@ -647,9 +653,9 @@ def compile(vcvars64: Path, file: Path, program: list[str]) -> None:
 
 def compile_all(curStep: int, finalStep: int, seed: int) -> int:
     rootDirectory = Path(__file__).resolve().parent
-    outputDirectory = rootDirectory / f"output-tigress_auto_{seed}"
+    outputDirectory = rootDirectory / f"output-tigress_test_{curStep}"
     srcDirectory = rootDirectory / "src"
-    make_log_file(rootDirectory / f"compile_tigress_auto_{seed}.log")               # Create a new log file for this run
+    make_log_file(rootDirectory / f"compile_tigress_test_{curStep}.log")            # Create a new log file for this run
     delete_directory(outputDirectory)                                               # Erase all output from previous executions of this script
 
     T1082 = "T1082" # A
@@ -689,10 +695,11 @@ def compile_all(curStep: int, finalStep: int, seed: int) -> int:
         curStep = advance_step(curStep, finalStep)
         
         compile(vcvars64, obfuscatedFile, program)
+        break
 
     return curStep
 
-seeds = [1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 11000, 12000, 13000, 14000, 15000, 16000]
+seeds = [0, 0]
 curStep = 1
 finalStep = 21 * 4 * len(seeds) # num programs * (merge, extension fix, transform, compile)
 for seed in seeds:
