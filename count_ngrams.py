@@ -9,6 +9,7 @@ from openpyxl import Workbook
 import hashlib
 import re
 import pefile
+import heapq
 
 
 # The jensen shannon distance is the sqr of jensen shannon divergence
@@ -94,7 +95,7 @@ def progam_ids() -> dict:
     return ids
 
 @beartype
-def as_distribution(ngrams: Path) -> dict | None:
+def as_count_vector(ngrams: Path) -> dict | None:
     with ngrams.open(newline = "", encoding = "utf-8") as file:
         reader = csv.reader(file)
         data = {}
@@ -104,15 +105,26 @@ def as_distribution(ngrams: Path) -> dict | None:
 
         totalCount = sum(data.values())
         if totalCount > 0:
-            return {key: value / totalCount for key, value in data.items()}
+            return data
         
         log(f"{str(ngrams)} had no counts!")
         return None
 
 @beartype
-def load_baseline_ngrams(programIds: dict) -> list[dict]:
-    distributions = [{} for _ in range(21)]
-    
+def calc_top5(programTop5: list[dict]) -> dict:
+    merged = {}
+    for top5 in programTop5:
+        for k, v in top5.items():
+            if k not in merged or v > merged[k]:
+                merged[k] = v
+
+    top5 = dict(heapq.nlargest(5, merged.items(), key = lambda item: item[1]))
+    return top5
+
+@beartype
+def count_baseline_ngrams(programIds: dict):
+    programTop5 = [{} for _ in range(21)]
+    counts = []
     rootDir = get_baseline_dir() / "_O2"
     for entry in rootDir.iterdir():
         if not entry.is_file():
@@ -122,81 +134,32 @@ def load_baseline_ngrams(programIds: dict) -> list[dict]:
             elif ngrams.stat().st_size < 8 * 1024: # 8kb
                 log(f"File {str(ngrams)} is smaller than 8kb. It may have broken ngrams.. Inspect it.")
             else:
-                distribution = as_distribution(ngrams)
-                if distribution is not None:
+                ngramCounts = as_count_vector(ngrams)
+                if ngramCounts is not None:
+                    counts.append(len(ngramCounts))
                     programName = entry.name[-15:]
                     programName = programName.replace("T", "_T")
                     id = programIds[programName]
-                    distributions[id - 1] = distribution
+                    programTop5[id - 1] = dict(sorted(ngramCounts.items(), key = lambda item: item[1], reverse = True)[:5])
                 else:
                     log(f"{str(ngrams)} produced None distribution")
 
-    return distributions    
+    print("\n\nBaseline Top5:")
+    top5 = calc_top5(programTop5)
+    print(top5)
+    print(f"Mean ngrams per program: {(sum(counts) / len(counts))}\nn-gram min/max range: [{min(counts)}-{max(counts)}]")
 
 @beartype
-def make_sheet(wb: Workbook, title: str, width: int, columnNames: list[str], rowNames: list[str], data: list[list[float]]):
-    sheet = wb.create_sheet(title = title)
-    sheet.append([""] + columnNames)    # Top left cell must be empty
+def count_tigress_ngrams(programIds: dict):
+    programTop5 = [[{} for _ in range(21)] for _ in range(16)]        # distributions[seed][programid] = distribution
+    assert len(programTop5) == 16                                     # 16 seeds
+    assert all(len(seedTop5s) == 21 for seedTop5s in programTop5)       # each seed has 21 programs
 
-    for rowName, rowValues, in zip(rowNames, data):
-        sheet.append([rowName] + rowValues)
-
-    for i in range(len(columnNames) + 1):
-        col = openpyxl.utils.get_column_letter(i + 1)
-        sheet.column_dimensions[col].width = width
-
-    return sheet
-
-# no templates because ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
-@beartype
-def make_sheet2(wb: Workbook, title: str, width: int, columnNames: list[str], rowNames: list[str], data: list[list[str]]):
-    sheet = wb.create_sheet(title = title)
-    sheet.append([""] + columnNames)    # Top left cell must be empty
-
-    for rowName, rowValues, in zip(rowNames, data):
-        sheet.append([rowName] + rowValues)
-
-    for i in range(len(columnNames) + 1):
-        col = openpyxl.utils.get_column_letter(i + 1)
-        sheet.column_dimensions[col].width = width
-
-    return sheet
-
-@beartype
-def make_tigress_sheet_names(programIds: dict) -> list[list[str]]:
-    rowNames = []
-    global g_Seeds
-    for seed in g_Seeds:
-        rowNames.append(f"Seed: {seed}")
-
-    colNames = [str()] * 21
-    for id in programIds.values():
-        colNames[id - 1] = f"Program ID: {id}"
-
-    return [colNames, rowNames]
-
-@beartype
-def make_flag_sheet_names(programIDs: dict, configIDs: dict) -> list[list[str]]:
-    rowNames = [str()] * 64
-    for id in configIDs.values():
-        rowNames[id - 1] = f"Config: {id}"
-
-    colNames = [str()] * 21
-    for id in programIDs.values():
-        colNames[id - 1] = f"Program ID: {id}"
-
-    return [colNames, rowNames]
-
-@beartype
-def load_tigress_ngrams(programIds: dict) -> list[list[dict]]:
-    distributions = [[{} for _ in range(21)] for _ in range(16)]        # distributions[seed][programid] = distribution
-    assert len(distributions) == 16                                     # 16 seeds
-    assert all(len(seedList) == 21 for seedList in distributions)     # each seed has 21 programs
-
+    counts = []
     dirs = get_tigress_dirs()
     seedIndex = 0
     for dir in dirs:
-        seedDistributions = distributions[seedIndex]
+        seedTop5s = programTop5[seedIndex]
 
         for entry in dir.iterdir():
             if entry.is_file():
@@ -212,102 +175,23 @@ def load_tigress_ngrams(programIds: dict) -> list[list[dict]]:
                     elif ngrams.stat().st_size < 8 * 1024: # 8kb
                         log(f"File {str(ngrams)} is smaller than 8kb. It may have broken ngrams.. Inspect it.")
                     else:
-                        distribution = as_distribution(ngrams)
-                        if distribution is not None:
+                        ngramCounts = as_count_vector(ngrams)
+                        if ngramCounts is not None:
+                            counts.append(len(ngramCounts))
                             id = programIds[programName]
-                            seedDistributions[id - 1] = distribution
+                            seedTop5s[id - 1] = dict(sorted(ngramCounts.items(), key = lambda item: item[1], reverse = True)[:5])
                         else:
                             log(f"{str(ngrams)} produced None distribution")
         seedIndex += 1
 
-    return distributions
-
-def as_aligned_vectors(baselineDistribution: dict, programDistribution: dict):
-    assert len(baselineDistribution) > 0
-    assert len(programDistribution) > 0
-
-    allNgrams = sorted(baselineDistribution.keys() | programDistribution.keys())
-
-    p = numpy.array([baselineDistribution.get(ngram, 0.0) for ngram in allNgrams], dtype = numpy.float64)
-    q = numpy.array([programDistribution.get(ngram, 0.0) for ngram in allNgrams], dtype = numpy.float64)
-
-    # For debug
-    #p2 = {k: baselineDistribution.get(k, 0.0) for k in allNgrams}
-    #q2 = {k: programDistribution.get(k, 0.0) for k in allNgrams}
-
-    return p, q
-
-@beartype
-def compute_tigress_jsd(wb: Workbook, programIds: dict, baselineDistributions: list[dict]):
-    # distributions[seed][programid] = distribution
-    distributions = load_tigress_ngrams(programIds)
-
-    # results[seed][programid]
-    results = [[0.0] * 21 for _ in range(16)]
-    seedIndex = 0
-    for seedDistributions in distributions:
-        id = 0
-        for programDistribution in seedDistributions:
-            baselineDistribution = baselineDistributions[id]
-            p, q = as_aligned_vectors(baselineDistribution, programDistribution)
-
-            # https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.distance.jensenshannon.html
-            results[seedIndex][id] = scipy.spatial.distance.jensenshannon(p, q, base = 2.0) ** 2
-            id += 1
-        seedIndex += 1
-
-    colNames, rowNames = make_tigress_sheet_names(programIds)
-    tigressSheet = make_sheet(wb, "Tigress", 20, colNames, rowNames, results)
-
-@beartype
-def sha256(path: Path) -> str:
-    with path.open("rb") as f:
-        return hashlib.file_digest(f, "sha256").hexdigest()
-    
-@beartype
-def hash_text_section(path: Path) -> str:
-    pe = pefile.PE(str(path))
-    h = hashlib.new("sha256")
-
-    for section in pe.sections:
-        name = section.Name.rstrip(b"\x00")
-        if name == b".text":
-            data = section.get_data()  # raw section data from file
-            h.update(data)
-            return h.hexdigest()
-
-    assert False
-    return None
-    
-@beartype
-def compute_tigress_hashes(wb: Workbook, programIds: dict):
-    hashes = [["" for _ in range(21)] for _ in range(16)]        # hashes[seed][programid] = hash
-    assert len(hashes) == 16                                     # 16 seeds
-    assert all(len(seed_list) == 21 for seed_list in hashes)     # each seed has 21 programs
-
-    dirs = get_tigress_dirs()
-    seedIndex = 0
-    for dir in dirs:
-        for entry in dir.iterdir():
-            if entry.is_file():
-                log(f"Unexepcted file: {str(entry.resolve())}")
-            else:
-                programName = "_" + entry.name[:-1]
-                if programName not in programIds:
-                    log(f"Failed to find id for program: {programName}")
-                else:
-                    executable = entry / Path("obf.exe")
-                    if not executable.exists():
-                        log(f"Unexpected missing ngrams file: {str(executable.resolve())}")
-                    else:
-                        id = programIds[programName]
-                        hashes[seedIndex][id - 1] = hash_text_section(executable)
-
-        seedIndex += 1
-    
-    colNames, rowNames = make_tigress_sheet_names(programIds)
-    sheet = make_sheet2(wb, "Tigress Hashes", 70, colNames, rowNames, hashes)
-
+    print("\n\nTigress Top5:")
+    allTop5s = []
+    for seedTop5s in programTop5:
+        allTop5s.extend(seedTop5s)
+    top5 = calc_top5(allTop5s)
+    print(top5)
+    print(f"Mean ngrams per program: {(sum(counts) / len(counts))}\nn-gram min/max range: [{min(counts)}-{max(counts)}]")
+  
 @beartype
 def config_indices() -> dict:
     flags = [['/guard:cf'],
@@ -412,11 +296,12 @@ def to_program_id(programIDs: dict, dir: Path) -> int | None:
     return programIDs[programName]
 
 @beartype
-def load_flag_ngrams(programIDs: dict, configIDs: dict) -> list[list[dict]]:
-    distributions = [[{} for _ in range(21)] for _ in range(64)]        # distributions[config][programid] = distribution
-    assert len(distributions) == 64                                     # 64 configs
-    assert all(len(seed_list) == 21 for seed_list in distributions)     # each config has 21 programs
+def count_flag_ngrams(programIDs: dict, configIDs: dict):
+    programTop5 = [[{} for _ in range(21)] for _ in range(64)]        # distributions[config][programid] = distribution
+    assert len(programTop5) == 64                                     # 64 configs
+    assert all(len(seedList) == 21 for seedList in programTop5)       # each config has 21 programs
 
+    counts = []
     outputDir = get_flag_conf_dir()
     for runDir in outputDir.iterdir():
         for entry in runDir.iterdir():
@@ -429,54 +314,33 @@ def load_flag_ngrams(programIDs: dict, configIDs: dict) -> list[list[dict]]:
             elif ngrams.stat().st_size < 8 * 1024: # 8kb
                 log(f"File {str(ngrams)} is smaller than 8kb. It may have broken ngrams.. Inspect it.")
             else:
-                distribution = as_distribution(ngrams)
-                if distribution is not None:
+                ngramCounts = as_count_vector(ngrams)
+                if ngramCounts is not None:
                     configID = to_config_id(configIDs, runDir)
                     programID = to_program_id(programIDs, entry)
                     if (configID is None) or (programID is None):
                         log("Invalid config or program id.")
                     else:
-                        distributions[configID - 1][programID - 1] = distribution
+                        counts.append(len(ngramCounts))
+                        programTop5[configID - 1][programID - 1] = dict(sorted(ngramCounts.items(), key = lambda item: item[1], reverse = True)[:5])
                 else:
                     log(f"{str(ngrams)} produced None distribution")
 
-    return distributions
-
-@beartype
-def compute_flag_jsd(wb: Workbook, programIDs: dict, baselineDistributions: list[dict]):
-    configIDs = config_indices()
-    distributions = load_flag_ngrams(programIDs, configIDs)
-
-    # results[configID][programID]
-    results = [[0.0] * 21 for _ in range(64)]
-    configIndex = 0
-    for configDistribution in distributions:
-        programID = 0
-        for programDistribution in configDistribution:
-            baselineDistribution = baselineDistributions[programID]
-            p, q = as_aligned_vectors(baselineDistribution, programDistribution)
-
-            # https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.distance.jensenshannon.html
-            results[configIndex][programID] = scipy.spatial.distance.jensenshannon(p, q, base = 2.0) ** 2
-            programID += 1
-
-        configIndex += 1
-
-    colNames, rowNames = make_flag_sheet_names(programIDs, configIDs)
-    sheet = make_sheet(wb, "Compiler Flags", 20, colNames, rowNames, results)
+    print("\n\nFlag Top5:")
+    allTop5s = []
+    for seedTop5s in programTop5:
+        allTop5s.extend(seedTop5s)
+    top5 = calc_top5(allTop5s)
+    print(top5)
+    print(f"Mean ngrams per program: {(sum(counts) / len(counts))}\nn-gram min/max range: [{min(counts)}-{max(counts)}]")
 
 def main():
-    make_log_file(Path(__file__).resolve().parent / "jsd_compute_auto.log")
+    make_log_file(Path(__file__).resolve().parent / "count_ngrams.log")
 
     programIds = progam_ids()
-    baselineDistributions = load_baseline_ngrams(programIds)
-
-    wb = Workbook()
-
-    compute_flag_jsd(wb, programIds, baselineDistributions)
-    compute_tigress_jsd(wb, programIds, baselineDistributions)
-    compute_tigress_hashes(wb, programIds)
-
-    wb.save("jsd_results.xlsx")
+    count_baseline_ngrams(programIds)
+    count_tigress_ngrams(programIds)
+    configIDs = config_indices()
+    count_flag_ngrams(programIds, configIDs)
 
 main()
