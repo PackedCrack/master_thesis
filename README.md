@@ -1,2 +1,3 @@
-# master_thesis
-master thesis
+# Compiler-Induced Feature Drift in Static Malware Analysis
+
+The study investigates whether compiler settings can change static malware-analysis features even when a program's functionality remains the same. The thesis isolates build configuration as a source of binary feature variation by using controlled C programs and a repeated-measures design. The results show that recompiling the same Windows PE programs with different MSVC configurations can produce substantial opcode 3-gram drift, and sometimes reach magnitudes comparable to traditional source-code obfuscation. The contribution is evidence that compiler settings should be treated as an experimental variable in work that relies on opcode-based static malware features.
